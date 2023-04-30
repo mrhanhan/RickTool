@@ -1,0 +1,14 @@
+.app-page {
+    height: 100%;
+}
+
+.app-page .ant-row,  .app-page .ant-col, .app-page .ant-row .ant-col .ant-card {
+    min-height: 100%;
+}
+.app-page .app-page_item_button {
+    display: none;
+}
+
+.app-page .ant-menu-item:hover .app-page_item_button  {
+    display: inline-block;
+}

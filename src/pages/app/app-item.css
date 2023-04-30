@@ -1,0 +1,24 @@
+.app-item_wrapper {
+    --app-border-color: rgb(62, 64, 65);
+    --app-border-ative-color: #177ddc;
+    background-color: var(--app-border-color);
+    background-image: -webkit-linear-gradient(45deg, 
+    transparent);
+    padding:8px;
+    border-radius:3px;
+    border: 1px solid var(--app-border-color);
+    transition: all 500ms;
+    margin: 8px;
+    width: 104px;
+    text-align: center;
+}
+.app-item_wrapper:hover {
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 1);
+}
+
+.app-item_wrapper .app-item_app-name {
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

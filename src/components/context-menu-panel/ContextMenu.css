@@ -1,0 +1,17 @@
+
+.context-menu_wrapper {
+    display: inline-block;
+    position: absolute;
+    margin: 0;
+    padding: 8px;
+    color: hsla(0,0%,100%,.85);
+    font-size: 14px;
+    font-variant: tabular-nums;
+    line-height: 1.5715;
+    font-feature-settings: "tnum";
+    background: #141414;
+    border-radius: 2px;
+    border: 1px solid #303030;
+    box-shadow: 4px 4px 16px #141414;
+    max-width: max-content;
+}

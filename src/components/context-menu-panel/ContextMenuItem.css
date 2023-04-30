@@ -1,0 +1,10 @@
+.ContextMenuItem_wrapper {
+    border-bottom: 1px solid #585151;
+    transition: all 500ms;
+    margin-bottom: 8px;
+}
+
+.ContextMenuItem_wrapper:hover {
+    cursor: pointer;
+    color: var(--ant-primary-color, #1890ff);
+}

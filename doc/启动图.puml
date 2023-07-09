@@ -1,0 +1,14 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+!theme aws-orange
+autonumber
+participant main as M
+participant Application as A
+participant Plugin as P
+M -> A: 1
+note right
+Application::new()
+end note
+
+
+@enduml

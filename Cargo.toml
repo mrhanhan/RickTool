@@ -1,0 +1,8 @@
+
+[workspace]
+members = [
+    "rick_app/src-tauri",
+    "rick_core"
+]
+
+

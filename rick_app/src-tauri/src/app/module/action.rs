@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::str::FromStr;
-use serde::de::{DeserializeOwned, IntoDeserializer};
-use serde::Serialize;
-use serde_json::{to_string, Value};
+use std::sync::{Arc, RwLock};
+use serde::de::{DeserializeOwned};
+use serde::{Serialize};
+use serde_json::{from_value, to_string, Value};
 
 /// Module动作
+#[derive(Clone, Debug)]
 pub struct ModuleAction<'a> {
     /// 调用命令
     command: &'a str,
@@ -13,19 +16,19 @@ pub struct ModuleAction<'a> {
 
 impl<'a> ModuleAction<'a> {
 
-    pub fn command(command: &str) -> Self {
+    pub fn command(command: &'a str) -> Self {
         Self {
             command,
             payload: None
         }
     }
-    pub fn command_payload(command: &str, payload: Value) -> Self {
+    pub fn command_payload(command: &'a str, payload: Value) -> Self {
         Self {
             command,
             payload: Some(payload)
         }
     }
-    pub fn command_serialize<S: Serialize>(command: &str, payload: &S) -> Self {
+    pub fn command_serialize<S: Serialize>(command: &'a str, payload: &S) -> Self {
         let mut _payload: Option<Value> = None;
         if let Ok(_value) = to_string(&payload) {
             _payload = Some(Value::from_str(_value.as_str()).unwrap());
@@ -39,49 +42,26 @@ impl<'a> ModuleAction<'a> {
     /// 获取数据
     pub fn get<T: DeserializeOwned>(&self) -> Option<T> {
         if let Some(_value) = self.payload.as_ref() {
-            if let Ok(_data) = T::deserialize(_value.into_deserializer()) {
+            if let Ok(_data) = from_value::<T>(_value.clone()) {
                 Some(_data);
             }
         }
         None
     }
 }
-/// Command
-impl<'a> Into<ModuleAction<'a>> for &'a str {
-    fn into(self) -> ModuleAction<'a> {
-        ModuleAction::command(self)
-    }
-}
-/// Command
-impl<'a> Into<ModuleAction<'a>> for (&'a str, Option<Value>) {
-    fn into(self) -> ModuleAction<'a> {
-        match self.1 {
-            None => ModuleAction::command(self.0),
-            Some(_payload) => ModuleAction::command_payload(self.0, _payload)
-        }
-    }
-}
-/// Command
-impl<'a> Into<ModuleAction<'a>> for (&'a str, Value) {
-    fn into(self) -> ModuleAction<'a> {
-        ModuleAction::command_payload(self.0, self.1)
+impl<'a, T: Into<&'a str>> From<T> for ModuleAction<'a> {
+    fn from(value: T) -> Self {
+        ModuleAction::command(value.into())
     }
 }
 
-/// Command
-impl<'a, T: Serialize> Into<ModuleAction<'a>> for (&'a str, Option<&T>) {
-    fn into(self) -> ModuleAction<'a> {
-        match self.1 {
-            None => ModuleAction::command(self.0),
-            Some(_payload) => ModuleAction::command_serialize(self.0, _payload)
-        }
-    }
-}
+
+
 
 /// 响应值
-pub struct ModuleResult(Result<Option<Value>, &'static str>);
+pub struct ModuleActionResult(Result<Option<Value>, &'static str>);
 
-impl ModuleResult {
+impl ModuleActionResult {
     /// 成功
     pub fn success(value: Option<Value>) -> Self {
         Self(Ok(value))
@@ -103,10 +83,48 @@ impl ModuleResult {
     /// 获取数据
     pub fn get<T: DeserializeOwned>(&self) -> Option<T> {
         if let Ok(Some(_value)) = self.0.as_ref() {
-            if let Ok(_data) = T::deserialize(_value.into_deserializer()) {
+            if let Ok(_data) = from_value::<T>(_value.clone()) {
                 Some(_data);
             }
         }
         None
     }
+}
+
+pub type ActionFunc = dyn Fn(ModuleAction) -> ModuleActionResult;
+
+/// 动作管理器
+#[derive(Clone)]
+pub struct ModuleActionManager {
+    /// 服务Map
+    _action_map: Arc<RwLock<HashMap<&'static str, Box<ActionFunc>>>>
+}
+
+impl ModuleActionManager {
+
+    pub fn new() -> Self {
+        Self {
+            _action_map: Arc::new(RwLock::new(HashMap::new()))
+        }
+    }
+
+    /// 注册服务
+    pub fn add(&self, operate: &'static str, action: Box<ActionFunc>) {
+        let mut map = self._action_map.write().unwrap();
+        map.entry(operate).or_insert(action);
+    }
+    /// 注册服务
+    pub fn add_into<I: Into<&'static str>>(&self, operate: I, action: Box<ActionFunc>) {
+        self.add(operate.into(), action);
+    }
+
+    /// 注册服务
+    pub fn call(&self, operate: &'static str, action: ModuleAction) -> ModuleActionResult {
+        let mut map = self._action_map.read().unwrap();
+        if let Some(_action_func) = map.get(operate) {
+            return _action_func(action)
+        }
+        ModuleActionResult::fail("non")
+    }
+
 }

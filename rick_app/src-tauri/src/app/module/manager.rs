@@ -75,24 +75,29 @@ impl ModuleManager {
         None
     }
 
-    pub(super)  fn on_init(&self, app: Application) -> Result<(), ModuleError> {
-        let manager = self.clone();
-        app.event_context().on_into(ApplicationEvent::Stoped, move |_app: &Application| {
-            manager.close();
+    pub(crate) fn on_init(&self, app: Application) -> Result<(), ModuleError> {
+        let start = self.clone();
+        let stop = self.clone();
+        app.event_context().on_into(ApplicationEvent::Started, move |_app: &Application| {
+            start.on_install(_app.clone());
         });
+        app.event_context().on_into(ApplicationEvent::Stoped, move |_app: &Application| {
+            stop.close();
+        });
+
         for item in self._module_map.read().unwrap().values() {
             item.module.on_init(app.clone());
         }
         Ok(())
     }
 
-    pub(super)  fn on_install(&self, app: Application) -> Result<(), ModuleError> {
+    fn on_install(&self, app: Application) -> Result<(), ModuleError> {
         for item in self._module_map.read().unwrap().values() {
             item.module.on_init(app.clone());
         }
         Ok(())
     }
-    pub(super) fn close(&self) {
+    fn close(&self) {
         for item in self._module_map.read().unwrap().values() {
             item.module.close();
         }

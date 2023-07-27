@@ -91,8 +91,6 @@ impl Application {
         self.thread_pool().submit(Box::new(move || {
             // 初始化
             app._module_manager.on_init(app.clone());
-            // 执行
-            app._module_manager.on_install(app.clone());
         }));
         let mut mutex_guard = self._app.lock().unwrap();
         let app = mutex_guard.take().unwrap();

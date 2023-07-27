@@ -1,9 +1,10 @@
+use std::fmt::{Display, Formatter, Pointer};
 use crate::app::application::{Application};
 
 mod action;
 mod manager;
 
-pub use self::action::{ModuleResult, ModuleAction};
+pub use self::action::{ModuleActionResult, ModuleAction, ModuleActionManager};
 pub use self::manager::{ModuleManager};
 /// 模块元数据
 pub struct ModuleMeta {
@@ -13,6 +14,22 @@ pub struct ModuleMeta {
     desc: &'static str,
 }
 
+impl ModuleMeta {
+    pub fn new(name: &'static str, desc: &'static str) -> Self {
+        Self {name, desc}
+    }
+}
+impl From<(&'static str, &'static str, )> for ModuleMeta {
+    fn from(value: (&'static str, &'static str)) -> Self {
+        ModuleMeta::new(value.0, value.1)
+    }
+}
+
+impl Display for ModuleMeta {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("Module: {} Desc: {}",  self.name, self.desc))
+    }
+}
 
 pub enum ModuleError {}
 
@@ -21,16 +38,24 @@ pub trait Module {
     /// 元数据
     fn meta(&self) -> ModuleMeta;
     /// 初始化模块
-    fn on_init(&self, app: Application) -> Result<(), ModuleError>;
+    fn on_init(&self, app: Application) -> Result<(), ModuleError> {
+        Ok(())
+    }
     /// 加载
-    fn on_install(&self, app: Application) -> Result<(), ModuleError>;
+    fn on_install(&self, app: Application) -> Result<(), ModuleError> {
+        Ok(())
+    }
     /// 卸载
-    fn on_uninstall(&self, app: Application) -> Result<(), ModuleError>;
+    fn on_uninstall(&self, app: Application) -> Result<(), ModuleError> {
+        Ok(())
+    }
     /// 加载
-    fn close(&self);
+    fn close(&self) {
+
+    }
     /// 动作
-    fn action(&self, _action: ModuleAction) -> ModuleResult {
-        Err("not action")
+    fn action(&self, _action: ModuleAction) -> ModuleActionResult {
+        ModuleActionResult::fail("non")
     }
     /// 克隆
     fn clone(&self) -> Box<dyn Module>;

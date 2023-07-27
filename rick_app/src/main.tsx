@@ -11,6 +11,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 );
 
 setTimeout(() => {
-   invoke('greet', {name: 'hello'}).then();
-   invoke('test', {name: 'hello', code: 100}).then();
+   invoke('test', {name: 'hello'}).then(resp => console.log(resp));
 });

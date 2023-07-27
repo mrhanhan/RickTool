@@ -5,6 +5,8 @@ mod context;
 mod utils;
 mod app;
 mod global;
+mod modules;
+mod service;
 
 use crate::app::application::{Application, ApplicationEvent};
 use crate::context::{get_application, init_application};

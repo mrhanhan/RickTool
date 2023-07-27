@@ -17,6 +17,7 @@ function MainLayout() {
                 each(menu?.children!);
             }
         }
+        console.log(location, defaultSelectedKeys, MenuList);
     }
     each(MenuList);
     return <Layout className="main-layout">

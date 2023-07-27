@@ -6,28 +6,21 @@ mod utils;
 mod app;
 mod global;
 
-use std::any::Any;
 use crate::app::application::{Application, ApplicationEvent};
 use crate::context::{get_application, init_application};
+use crate::global::{RickInvoke};
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn handler(invoke: RickInvoke) {
+    get_application().service_register().call(invoke);
 }
 
 fn main() {
     let app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(handler)
         .build(tauri::generate_context!()).unwrap();
-    init_application(app);
-    let event_context = get_application().event_context();
-    event_context.on_into(ApplicationEvent::Started, |_data: &i32|{
-        println!("启动啦")
-    });
-    event_context.on_into(ApplicationEvent::Started, |_data: &Application|{
+    let mut app = init_application(app);
+    app.event_context().on_into(ApplicationEvent::Started, |_data: &Application|{
         println!("启动啦: App")
     });
-
-    get_application().start();
+    app.start();
 }

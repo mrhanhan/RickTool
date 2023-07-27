@@ -6,7 +6,7 @@ use std::{
 
 use super::{thread_signal::ThreadSignal};
 
-pub(crate) type Task = Box<dyn Fn() + Send + Sync>;
+pub(crate) type Task = Box<dyn Fn()>;
 
 /// 任务队列
 pub(crate) struct TaskQueue(RwLock<Vec<Task>>, ThreadSignal);
@@ -58,6 +58,8 @@ impl<'a> TaskQueue {
     }
 }
 
+unsafe impl Send for TaskQueue {}
+unsafe impl Sync for TaskQueue {}
 
 #[derive(Debug)]
 pub enum SubmitError {

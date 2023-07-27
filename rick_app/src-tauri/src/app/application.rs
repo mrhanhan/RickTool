@@ -5,12 +5,14 @@ use tauri::{App, RunEvent, Wry};
 
 use std::time::Duration;
 use crate::app::listener::{EventBus};
+use crate::app::module::ModuleManager;
+use crate::app::service::ServiceRegister;
 use crate::define_event;
 use crate::global::{RickApp, RickAppHandler};
 use crate::utils::{ThreadPool, ThreadSignal};
 
 /// 应用程序事件
-define_event!(ApplicationEvent => Started);
+define_event!(ApplicationEvent => Started, Stoped);
 
 
 /// RickTool 的应用程序功能
@@ -24,7 +26,11 @@ pub struct Application {
     /// 线程池
     _thread_pool: Arc<ThreadPool>,
     ///
-    _status: Arc<(ThreadSignal, AtomicBool)>
+    _status: Arc<(ThreadSignal, AtomicBool)>,
+    /// 服务注册器
+    _service_register: ServiceRegister,
+    /// 模块管理器
+    _module_manager: ModuleManager
 }
 
 
@@ -37,7 +43,9 @@ impl Application {
             _app: Arc::new(Mutex::new(Option::Some(app))),
             _event_context: Arc::new(EventBus::new()),
             _thread_pool: Arc::new(ThreadPool::new(10, 1024, Duration::from_millis(10))),
-            _status: Arc::new((ThreadSignal::new(), AtomicBool::new(false)))
+            _status: Arc::new((ThreadSignal::new(), AtomicBool::new(false))),
+            _service_register: ServiceRegister::new(),
+            _module_manager: ModuleManager::new()
         }
     }
 }
@@ -61,7 +69,12 @@ impl Application {
         let app = self._app_handler.read().unwrap();
         app.as_ref().unwrap().clone()
     }
-
+    pub fn module_manager(&self) -> ModuleManager {
+        self._module_manager.clone()
+    }
+    pub fn service_register(&self) -> ServiceRegister {
+        self._service_register.clone()
+    }
     fn set_context(&self, context: RickAppHandler) {
         let mut ctx = self._app_handler.write().unwrap();
         *ctx = Some(context);
@@ -73,6 +86,14 @@ impl Application {
             return;
         }
         self._status.1.store(true, Ordering::Release);
+        // 启动模块注册服务
+        let app = self.clone();
+        self.thread_pool().submit(Box::new(move || {
+            // 初始化
+            app._module_manager.on_init(app.clone());
+            // 执行
+            app._module_manager.on_install(app.clone());
+        }));
         let mut mutex_guard = self._app.lock().unwrap();
         let app = mutex_guard.take().unwrap();
         let ctx = self as *const Application as usize;
@@ -85,6 +106,7 @@ impl Application {
                 },
                 RunEvent::ExitRequested {api, .. } => {
                     println!("ExitRequested");
+                    event_context.emit_into(ApplicationEvent::Stoped, application.clone());
                 },
                 _ => {}
             }
@@ -99,6 +121,8 @@ impl Application {
             _app: self._app.clone(),
             _status: self._status.clone(),
             _app_handler: self._app_handler.clone(),
+            _service_register: self._service_register.clone(),
+            _module_manager: self._module_manager.clone()
         }
     }
 }

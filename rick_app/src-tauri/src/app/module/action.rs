@@ -5,6 +5,10 @@ use serde::de::{DeserializeOwned};
 use serde::{Serialize};
 use serde_json::{from_value, to_string, Value};
 
+pub trait ToAction<'a> {
+    fn to(self) -> ModuleAction<'a>;
+}
+
 /// Module动作
 #[derive(Clone, Debug)]
 pub struct ModuleAction<'a> {
@@ -28,7 +32,7 @@ impl<'a> ModuleAction<'a> {
             payload: Some(payload)
         }
     }
-    pub fn command_serialize<S: Serialize>(command: &'a str, payload: &S) -> Self {
+    pub fn command_serialize<S: Serialize + ?Sized>(command: &'a str, payload: &S) -> Self {
         let mut _payload: Option<Value> = None;
         if let Ok(_value) = to_string(&payload) {
             _payload = Some(Value::from_str(_value.as_str()).unwrap());
@@ -43,10 +47,14 @@ impl<'a> ModuleAction<'a> {
     pub fn get<T: DeserializeOwned>(&self) -> Option<T> {
         if let Some(_value) = self.payload.as_ref() {
             if let Ok(_data) = from_value::<T>(_value.clone()) {
-                Some(_data);
+               return Some(_data);
             }
         }
         None
+    }
+
+    pub fn cmd(&self) -> &'a str {
+        self.command
     }
 }
 impl<'a, T: Into<&'a str>> From<T> for ModuleAction<'a> {
@@ -84,7 +92,7 @@ impl ModuleActionResult {
     pub fn get<T: DeserializeOwned>(&self) -> Option<T> {
         if let Ok(Some(_value)) = self.0.as_ref() {
             if let Ok(_data) = from_value::<T>(_value.clone()) {
-                Some(_data);
+                return Some(_data);
             }
         }
         None
@@ -119,7 +127,7 @@ impl ModuleActionManager {
     }
 
     /// 注册服务
-    pub fn call(&self, operate: &'static str, action: ModuleAction) -> ModuleActionResult {
+    pub fn call(&self, operate: &str, action: ModuleAction) -> ModuleActionResult {
         let mut map = self._action_map.read().unwrap();
         if let Some(_action_func) = map.get(operate) {
             return _action_func(action)

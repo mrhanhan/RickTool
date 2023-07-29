@@ -39,7 +39,7 @@ impl Application {
     /// 创建一个Application
     pub fn new(app: App<Wry>) -> Self {
         Application {
-            _app_handler: Arc::new(RwLock::new(None)),
+            _app_handler: Arc::new(RwLock::new(Some(app.handle()))),
             _app: Arc::new(Mutex::new(Option::Some(app))),
             _event_context: Arc::new(EventBus::new()),
             _thread_pool: Arc::new(ThreadPool::new(10, 1024, Duration::from_millis(10))),

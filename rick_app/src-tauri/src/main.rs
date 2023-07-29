@@ -7,10 +7,11 @@ mod app;
 mod global;
 mod modules;
 mod service;
+pub mod model;
 
 use crate::app::application::{Application, ApplicationEvent};
 use crate::context::{get_application, init_application};
-use crate::global::{RickInvoke};
+use crate::global::RickInvoke;
 
 fn handler(invoke: RickInvoke) {
     get_application().service_register().call(invoke);

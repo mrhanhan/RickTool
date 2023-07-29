@@ -85,7 +85,7 @@ impl Event for &str {
     }
 }
 
-type BoxedCallback = Box<dyn Fn(&dyn Any) + Send>;
+type BoxedCallback = Box<dyn Fn(&dyn Any)>;
 
 pub struct EventBus {
     handlers: Arc<Mutex<HashMap<String, Vec<BoxedCallback>>>>,
@@ -98,7 +98,7 @@ impl EventBus {
         }
     }
 
-    pub fn on<T: 'static, F: Fn(&T) + 'static + Send>(&self, event: String, handler: F) {
+    pub fn on<T: 'static, F: Fn(&T) + 'static>(&self, event: String, handler: F) {
         let handlers = self.handlers.clone();
         let mut handlers = handlers.lock().unwrap();
         handlers.entry(event)
@@ -110,10 +110,10 @@ impl EventBus {
             }));
     }
 
-    pub fn on_event<T: 'static, F: Fn(&T) + 'static + Send, I: Event>(&self, event: I, handler: F) {
+    pub fn on_event<T: 'static, F: Fn(&T) + 'static, I: Event>(&self, event: I, handler: F) {
         self.on(event.event(), handler);
     }
-    pub fn on_into<T: 'static, F: Fn(&T) + 'static + Send, I: Into<String>>(&self, event: I, handler: F) {
+    pub fn on_into<T: 'static, F: Fn(&T) + 'static, I: Into<String>>(&self, event: I, handler: F) {
         self.on(event.into(), handler);
     }
 

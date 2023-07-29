@@ -1,11 +1,13 @@
-pub mod global_val;
+mod global_val;
 mod thread_pool;
 mod thread_signal;
+mod arc_val;
 
 use std::any::Any;
 pub use thread_pool::*;
 pub use thread_signal::*;
 pub use global_val::*;
+pub use arc_val::*;
 
 
 /// 类型转换

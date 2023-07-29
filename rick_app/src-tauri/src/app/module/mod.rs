@@ -4,7 +4,7 @@ use crate::app::application::{Application};
 mod action;
 mod manager;
 
-pub use self::action::{ModuleActionResult, ModuleAction, ModuleActionManager};
+pub use self::action::{ModuleActionResult, ModuleAction, ModuleActionManager, ActionFunc};
 pub use self::manager::{ModuleManager};
 /// 模块元数据
 pub struct ModuleMeta {
@@ -18,6 +18,15 @@ impl ModuleMeta {
     pub fn new(name: &'static str, desc: &'static str) -> Self {
         Self {name, desc}
     }
+
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+
+    pub fn desc(&self) -> &'static str {
+        self.desc
+    }
+
 }
 impl From<(&'static str, &'static str, )> for ModuleMeta {
     fn from(value: (&'static str, &'static str)) -> Self {

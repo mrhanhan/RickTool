@@ -50,9 +50,7 @@ impl Application {
     }
 }
 
-unsafe impl Send for Application {
-
-}
+unsafe impl Send for Application {}
 
 #[allow(unused)]
 impl Application {

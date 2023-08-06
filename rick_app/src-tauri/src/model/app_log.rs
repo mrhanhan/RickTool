@@ -14,7 +14,6 @@ pub enum LogLevel {
 pub struct AppLog<'a, S: Serialize> {
     /// 日志级别
     level: LogLevel,
-    /// 所属模块
     module: Option<&'a str>,
     /// 类型
     mtype: &'a str,
@@ -23,6 +22,8 @@ pub struct AppLog<'a, S: Serialize> {
     /// payload
     payload: Option<S>
 }
+
+impl<'a, S: Serialize> AppLog<'a, S> {}
 
 const APP_LOG_EVENT: &str = "SYSTEM::APP_LOG";
 

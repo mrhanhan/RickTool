@@ -2,7 +2,7 @@
 [workspace]
 members = [
     "rick_app/src-tauri",
-    "rick_core"
+    "rick_core",
+    "rick_core/rick_core_macro"
 ]
-
 

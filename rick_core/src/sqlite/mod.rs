@@ -1,10 +1,14 @@
 mod query;
 mod cond;
 mod conn;
+mod update;
 
+use sqlite::State::Done;
+use sqlite::Statement;
 pub use conn::*;
 pub use cond::*;
 pub use query::*;
+pub use update::*;
 
 /// 表字段
 #[derive(Debug)]
@@ -12,7 +16,9 @@ pub struct TableColumn {
     /// 字段
     pub field: ColumnValue,
     /// 列名称
-    pub column: ColumnValue
+    pub column: ColumnValue,
+    /// 是否是ID 字段
+    pub id: bool
 }
 
 /// 描述表的Table
@@ -23,34 +29,47 @@ pub trait Table {
     fn conn() -> Connection;
     /// 字段内容
     fn columns() -> Vec<TableColumn>;
-}
-
-/// 可查询的Trait
-pub trait DatabaseOperate {
-    /// 可查询的Module
-    type Model: Table + From<sqlite::Row>;
-
-    /// 查询List
-    fn select_list(wrapper: SqlWrapper) -> Result<Vec<Self::Model>, SqlError> {
-        // 获取连接
-        let sql = format!("select * from {}", Self::Model::table_name());
-        match wrapper.process(sql, &Self::Model::conn()) {
-            Ok(_statement) => {
-                let mut result: Vec<Self::Model> = Vec::new();
-                for row in _statement {
-                    if let Ok(_row) = row {
-                        result.push(Self::Model::from(_row));
-                    }
-                }
-                Ok(result)
-            }
-            Err(_err) => {
-                Err(_err)
+    /// 获取ID字段
+    fn id_column() -> Option<ColumnValue> {
+        for x in Self::columns() {
+            if x.id {
+                return Some(x.column);
             }
         }
+        None
     }
 }
 
-impl<T: Table + From<sqlite::Row>> DatabaseOperate for T {
+/// 保存绑定
+pub trait SaveBind: Table {
+    /// 绑定字段
+    fn bind(&self, statement: &mut Statement) -> Result<(), SqlError>;
+    /// 开始
+    fn bind_index(&self, statement: &mut Statement, start_index: usize) -> Result<(), SqlError>;
+    /// 更新设置 更新值，include_id 是否包含对ID的设置
+    fn update_set<T: Table>(&self, update: UpdateWrapper<T>, include_id: bool) ->  UpdateWrapper<T>;
+}
+
+impl<T: Table + From<sqlite::Row>> QueryDatabaseOperate for T {
     type Model = T;
+}
+
+impl<T: Table + SaveBind> UpdateDatabaseOperate for T {
+    type Model = T;
+}
+
+
+fn done(mut _statement: Statement) -> Result<(), SqlError>{
+    loop {
+        match _statement.next() {
+            Ok(_state) => {
+                if let Done = _state {
+                    return Ok(())
+                }
+            }
+            Err(_err) => {
+                return Err(_err)
+            }
+        }
+    }
 }

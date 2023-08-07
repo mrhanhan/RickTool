@@ -17,8 +17,3 @@ impl Connection {
     }
 }
 
-/// 连接管理器
-pub struct ConnectionManager {
-
-}
-

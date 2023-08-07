@@ -1,10 +1,15 @@
-use std::time::Duration;
-use sqlite::{BindableWithIndex, ParameterIndex, Statement};
+use sqlite::{BindableWithIndex, ParameterIndex, Statement, Value};
 use crate::sqlite::cond::SqlCondEnum::{Group, In};
 use crate::sqlite::cond::SqlCondJoin::{And, AndGroup, Or, OrGroup};
-use crate::sqlite::conn::{Connection, SqlError};
-
+use crate::sqlite::{Connection, SqlError};
+use crate::sqlite::SqlValue::{Float, Null, Number, Text};
+use std::str::FromStr;
 pub type ColumnValue = &'static str;
+
+pub trait To<T> {
+    /// 转换
+    fn to(&self) -> T;
+}
 
 macro_rules! sql_value_impl {
     ($input: ty, Number) => {
@@ -13,6 +18,12 @@ macro_rules! sql_value_impl {
                 SqlValue::Number(value as i64)
             }
         }
+        impl From<&$input> for SqlValue {
+            fn from(value: &$input) -> Self {
+                SqlValue::Number(*value as i64)
+            }
+        }
+
     };
     ($input: ty, Float) => {
         impl From<$input> for SqlValue {
@@ -20,7 +31,33 @@ macro_rules! sql_value_impl {
                 SqlValue::Float(value as f64)
             }
         }
+        impl From<&$input> for SqlValue {
+            fn from(value: &$input) -> Self {
+                SqlValue::Float(*value as f64)
+            }
+        }
+
     }
+}
+macro_rules! sql_value_into_number {
+    ($input: ty) => {
+        impl From<&SqlValue> for $input {
+            fn from(value: &SqlValue) -> Self {
+                   match value {
+                    Text(str) => Self::from_str(str.as_str()).unwrap(),
+                    Float(value) => *value as $input,
+                    Number(value) => *value as $input,
+                    _ => 0 as $input
+                }
+            }
+        }
+        impl To<$input> for SqlValue {
+            fn to(&self) -> $input {
+                From::<&SqlValue>::from(self)
+            }
+        }
+
+    };
 }
 
 #[derive(Clone, Debug)]
@@ -31,28 +68,75 @@ pub enum SqlValue {
     Float(f64),
     /// 文本
     Text(String),
-    /// 日期类型
-    Date(Duration),
     /// 空
     Null
+}
+
+impl TryFrom<&Value> for SqlValue {
+    type Error = SqlError;
+
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        Ok(match value {
+            Value::Null => Null,
+            Value::String(ref str) => SqlValue::Text(str.clone()),
+            Value::Float(ref value) => SqlValue::Float(*value),
+            Value::Integer(ref value) => SqlValue::Number(*value),
+            _ => Null
+        })
+    }
+}
+
+
+impl From<&SqlValue> for String {
+    fn from(value: &SqlValue) -> Self {
+        match value {
+            Text(str) => str.clone(),
+            Float(value) => format!("{}", value),
+            Number(value) => format!("{}", value),
+            _ => String::new()
+        }
+    }
+}
+impl To<String> for SqlValue {
+    fn to(&self) -> String {
+        From::<&SqlValue>::from(self)
+    }
+}
+sql_value_into_number!(u32);
+sql_value_into_number!(i32);
+sql_value_into_number!(usize);
+sql_value_into_number!(isize);
+sql_value_into_number!(u8);
+sql_value_into_number!(i8);
+sql_value_into_number!(u16);
+sql_value_into_number!(i16);
+sql_value_into_number!(u64);
+sql_value_into_number!(i64);
+sql_value_into_number!(f32);
+sql_value_into_number!(f64);
+
+impl<'a, T: From<&'a SqlValue>> To<Option<T>> for &'a SqlValue {
+    fn to(&self) -> Option<T> {
+        match &self {
+            Null => None,
+            _ => Some(T::from(self))
+        }
+    }
 }
 
 impl BindableWithIndex for &SqlValue {
     fn bind<T: ParameterIndex>(self, _statement: &mut Statement, _index: T) -> sqlite::Result<()> {
         match self.clone() {
-            SqlValue::Number(_number) => {
+            Number(_number) => {
                 _number.bind(_statement, _index)
             }
-            SqlValue::Float(_float) => {
+            Float(_float) => {
                 _float.bind(_statement, _index)
             }
-            SqlValue::Text(_string) => {
+            Text(_string) => {
                 _string.as_str().bind(_statement, _index)
             }
-            SqlValue::Date(_date) => {
-                "".bind(_statement, _index)
-            }
-            SqlValue::Null => {
+            Null => {
                 Option::<&str>::None.bind(_statement, _index)
             }
         }
@@ -62,6 +146,12 @@ impl BindableWithIndex for &SqlValue {
 impl From<String> for SqlValue {
     fn from(value: String) -> Self {
         SqlValue::Text(value)
+    }
+}
+
+impl From<&String> for SqlValue {
+    fn from(value: &String) -> Self {
+        SqlValue::Text(value.clone())
     }
 }
 
@@ -262,7 +352,7 @@ impl SqlWrapper {
         match _statement {
             Ok(mut _statement) => {
                 // 绑定数据
-                let mut index = 0usize;
+                let mut index = 1usize;
                 if let Err(_err) = self.process_cond_value(&mut _statement, &mut index) {
                     return Err(_err);
                 }
@@ -275,7 +365,7 @@ impl SqlWrapper {
         }
     }
 
-    fn process_cond_sql(&self, cond_sql: &mut String, index: &mut usize) {
+    pub(crate) fn process_cond_sql(&self, cond_sql: &mut String, index: &mut usize) {
         for _cond in self.cond.clone() {
             if *index > 0 {
                 cond_sql.push_str(match _cond.join {
@@ -300,7 +390,7 @@ impl SqlWrapper {
                         cond_sql.push_str(",");
                     }
                     cond_sql.push_str(" ?");
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 cond_sql.push_str(")");
             } else {
@@ -310,58 +400,57 @@ impl SqlWrapper {
                 // 添加条件
                 cond_sql.push_str(get_cond_value(&_cond.cond));
                 cond_sql.push_str(" ?");
-                *index = (*index + 1);
+                *index = *index + 1;
             }
         }
     }
 
-    fn process_cond_value(&self, _statement: &mut Statement, index: &mut usize) -> Result<(), SqlError>  {
+    pub(crate) fn process_cond_value(&self, _statement: &mut Statement, index: &mut usize) -> Result<(), SqlError>  {
         for _cond in self.cond.clone() {
             match _cond.cond.clone() {
                 SqlCondEnum::Equal(_val) => {
                     if let Err(_err) = _statement.bind((*index, &_val)) {
                         return Err(_err);
                     }
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 SqlCondEnum::Like(_val) => {
                     if let Err(_err) = _statement.bind((*index, &_val)) {
                         return Err(_err);
                     }
-                    *index = (*index + 1);
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 In(_vec) => {
                     for _index in 0.._vec.len() {
                         if let Err(_err) = _statement.bind((*index, _vec.get(_index).unwrap())) {
                             return Err(_err);
                         }
-                        *index = (*index + 1);
+                        *index = *index + 1;
                     }
                 }
                 SqlCondEnum::Lt(_val) => {
                     if let Err(_err) = _statement.bind((*index, &_val)) {
                         return Err(_err);
                     }
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 SqlCondEnum::Le(_val) => {
                     if let Err(_err) = _statement.bind((*index, &_val)) {
                         return Err(_err);
                     }
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 SqlCondEnum::Gt(_val) => {
                     if let Err(_err) = _statement.bind((*index, &_val)) {
                         return Err(_err);
                     }
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 SqlCondEnum::Ge(_val) => {
                     if let Err(_err) = _statement.bind((*index, &_val)) {
                         return Err(_err);
                     }
-                    *index = (*index + 1);
+                    *index = *index + 1;
                 }
                 Group(_wrapper) => {
                     _wrapper.process_cond_value(_statement, index);

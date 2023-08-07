@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 sqlite = "0.31"
-
+chrono = "0.4"
 
 
 [dependencies.rick_core_macro]

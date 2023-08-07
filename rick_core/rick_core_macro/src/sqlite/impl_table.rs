@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{DeriveInput, parse_str, Path};
 use crate::sqlite::meta::{TableInfo};
 
@@ -7,27 +7,70 @@ use crate::sqlite::meta::{TableInfo};
 pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
     let struct_name = input.ident;
     let table_name = _info.table.clone();
-    eprintln!("Call {:#?}", _info);
-    let _call_token_result = parse_str::<Path>("hello");
-    eprintln!("Call {:#?}", _call_token_result);
+    let _call_token_result = parse_str::<Path>(_info.conn.as_str());
     let mut columns = quote!();
-    let fields = Vec::from_iter(_info.fields.iter().filter(|c| {!c.exclude}).map(|m|{m.clone()}));
-    for _column_info in fields {
+    let mut from_fields = quote!();
+    let mut bind_fields = quote!();
+    let mut bind_index_fields = quote!();
+    let mut update_set_fields = quote!();
+    let fields = Vec::from_iter(_info.fields.iter().map(|m|{m.clone()}));
+    let mut column_index = 0usize;
+    for i in 0..fields.len() {
+        let _column_info = fields.get(i).unwrap();
         let field = &_column_info.field;
         let column = &_column_info.column;
-        columns.extend(quote!{
-            vec.push(rick_core::sqlite::TableColumn {
-            field: #field,
-            column: #column
+        let id = &_column_info.id;
+        let ty = &_column_info.ty;
+        let f = format_ident!("{}", field);
+        if !_column_info.exclude {
+            columns.extend(quote!{
+                vec.push(rick_core::sqlite::TableColumn {
+                    field: #field,
+                    column: #column,
+                    id: #id
+                });
             });
-        })
+            let bind_index = format!(":{}", column);
+            bind_fields.extend(quote!{
+               let val = Into::<rick_core::sqlite::SqlValue>::into(&self.#f);
+                if let Err(_err) = statement.bind((#bind_index, &val)) {
+                    return Err(_err);
+                }
+            });
+            bind_index_fields.extend(quote!{
+                let val = Into::<rick_core::sqlite::SqlValue>::into(&self.#f);
+                if let Err(_err) = statement.bind((start_index + #column_index, &val)) {
+                    return Err(_err);
+                }
+            });
+            let is_id = _column_info.id;
+            update_set_fields.extend(quote!{
+                if ! #is_id || include_id {
+                    update = update.set(#column, &self.#f);
+                }
+            });
+            column_index = column_index + 1;
+        }
+        if i > 0 {
+            from_fields.extend(quote!{,
+            });
+        }
+        if _column_info.exclude {
+            from_fields.extend(quote!{
+                #f: #ty::default()
+            });
+        } else {
+            from_fields.extend(quote!{
+                #f: rick_core::sqlite::To::<#ty>::to(&(row.read::<rick_core::sqlite::SqlValue, _>(#column)))
+            });
+        }
     }
     if let Err(_err) = _call_token_result {
         return quote!().into();
-        // return TokenStream::from((Error::custom(format!("conn 语法有误 {}", _err.to_string()))).write_errors())
     }
     let tokens = _call_token_result.unwrap();
-    (quote! {
+    let mut output = quote! {
+        use rick_core::sqlite::{SqlValue, To, SaveBind, Table };
         impl rick_core::sqlite::Table for #struct_name {
             fn table_name() -> &'static str {
                 #table_name
@@ -42,5 +85,33 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
                 vec
             }
         }
-    }).into()
+    };
+    output.extend(quote! {
+        impl From<sqlite::Row> for #struct_name {
+            fn from(row: sqlite::Row) -> Self {
+                Self {
+                    #from_fields
+                }
+            }
+        }
+
+    });
+    output.extend(quote! {
+        impl rick_core::sqlite::SaveBind for #struct_name {
+            fn bind(&self, statement: &mut sqlite::Statement) -> Result<(), rick_core::sqlite::SqlError> {
+                #bind_fields
+                Ok(())
+            }
+            fn bind_index(&self, statement: &mut sqlite::Statement, start_index: usize) -> Result<(), rick_core::sqlite::SqlError> {
+                #bind_index_fields
+                Ok(())
+            }
+
+            fn update_set<T: rick_core::sqlite::Table>(&self, mut update: rick_core::sqlite::UpdateWrapper<T>, include_id: bool) ->  rick_core::sqlite::UpdateWrapper<T> {
+                #update_set_fields
+                update
+            }
+        }
+    });
+    output.into()
 }

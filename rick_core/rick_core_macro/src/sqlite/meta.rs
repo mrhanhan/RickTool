@@ -1,6 +1,5 @@
-use std::fmt::{Display};
 use darling::{FromMeta};
-use syn::Type;
+use syn::{Type};
 
 #[derive(Debug, FromMeta)]
 pub struct TableMeta {
@@ -17,7 +16,11 @@ pub struct TableFieldMeta {
     #[darling(default)]
     pub column: Option<String>,
     /// 排除字段
-    pub exclude: Option<bool>
+    pub exclude: Option<bool>,
+    /// 是否是ID
+    pub id: Option<bool>,
+    /// 表达式
+    pub default: Option<String>
 }
 
 #[derive(Debug, Clone)]
@@ -28,6 +31,10 @@ pub struct TableFieldInfo {
     pub field: String,
     /// 是否排除
     pub exclude: bool,
+    /// 是否是ID
+    pub id: bool,
+    /// 表达式
+    pub default: Option<String>,
     /// 类型
     pub ty: Type
 }

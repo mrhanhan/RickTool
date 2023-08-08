@@ -1,4 +1,5 @@
-use std::marker;
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::marker::PhantomData;
 use crate::sqlite::{SqlError, SqlValue, SqlWrapper, Table};
 
@@ -45,6 +46,21 @@ pub trait QueryDatabaseOperate {
                 } else {
                     return Ok(_list.pop());
                 }
+            }
+            Err(_err) => Err(_err)
+        }
+    }
+
+    fn select_map<K: Eq + Hash>(wrapper: &SqlWrapper, key_func: fn(&Self::Model) -> K) -> Result<HashMap<K, Self::Model>, SqlError> {
+        let vec = Self::select_list(wrapper);
+        match vec {
+            Ok(_list) => {
+                let mut map = HashMap::new();
+                for i in _list {
+                    map.entry(key_func(&i))
+                        .or_insert(i);
+                }
+                Ok(map)
             }
             Err(_err) => Err(_err)
         }

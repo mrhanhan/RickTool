@@ -4,6 +4,8 @@ use crate::sqlite::cond::SqlCondJoin::{And, AndGroup, Or, OrGroup};
 use crate::sqlite::{Connection, SqlError};
 use crate::sqlite::SqlValue::{Float, Null, Number, Text};
 use std::str::FromStr;
+use serde::{Deserialize, Serialize, Serializer};
+
 pub type ColumnValue = &'static str;
 
 pub trait To<T> {
@@ -70,6 +72,17 @@ pub enum SqlValue {
     Text(String),
     /// 空
     Null
+}
+
+impl Serialize for SqlValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        match self {
+            Text(ref str) => serializer.serialize_str(str.as_str()),
+            Float(ref value) => serializer.serialize_f64(*value),
+            Number(ref value) => serializer.serialize_i64(*value),
+            _ => serializer.serialize_none()
+        }
+    }
 }
 
 impl TryFrom<&Value> for SqlValue {
@@ -465,7 +478,7 @@ impl SqlWrapper {
         for _append in self.append_sql.clone() {
             cond_sql.push_str(" ");
             cond_sql.push_str(_append.sql.as_str());
-            *index = (*index + _append.args.len());
+            *index = *index + _append.args.len();
         }
     }
 
@@ -476,7 +489,7 @@ impl SqlWrapper {
                 if let Err(_err) = _statement.bind((*index, &_arg)) {
                     return Err(_err);
                 }
-                *index = (*index + 1);
+                *index = *index + 1;
             }
         }
         Ok(())

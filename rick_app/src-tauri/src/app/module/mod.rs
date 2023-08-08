@@ -64,7 +64,7 @@ pub trait Module {
     }
     /// 动作
     fn action(&self, _action: ModuleAction) -> ModuleActionResult {
-        ModuleActionResult::fail("non")
+        ModuleActionResult::fail_reason("non")
     }
     /// 克隆
     fn clone(&self) -> Box<dyn Module>;

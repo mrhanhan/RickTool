@@ -15,5 +15,10 @@ impl Connection {
     pub fn prepare<T: AsRef<str>>(&self, statement: T) -> Result<Statement, SqlError> {
         self.0.prepare(statement)
     }
+    /// 执行
+    pub fn execute<T: AsRef<str>>(&self, statement: T) -> Result<(), SqlError> {
+        self.0.execute(statement)
+    }
+    
 }
 

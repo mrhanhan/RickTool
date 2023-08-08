@@ -4,6 +4,7 @@ use std::sync::{Arc, RwLock};
 use serde::de::{DeserializeOwned};
 use serde::{Serialize};
 use serde_json::{from_value, to_string, Value};
+use rick_core::error::{AppError, RickError};
 
 pub trait ToAction<'a> {
     fn to(self) -> ModuleAction<'a>;
@@ -67,7 +68,7 @@ impl<'a, T: Into<&'a str>> From<T> for ModuleAction<'a> {
 
 
 /// 响应值
-pub struct ModuleActionResult(Result<Option<Value>, &'static str>);
+pub struct ModuleActionResult(Result<Option<Value>, Box<dyn RickError>>);
 
 impl ModuleActionResult {
     /// 成功
@@ -75,8 +76,11 @@ impl ModuleActionResult {
         Self(Ok(value))
     }
     /// 成功
-    pub fn fail(reason: &'static str) -> Self {
-        Self(Err(reason))
+    pub fn fail_reason(reason: &'static str) -> Self {
+        Self(Err(Box::new(AppError::new(0, reason))))
+    }
+    pub fn fail<E: RickError + 'static>(error: E) -> Self {
+        Self(Err(Box::new(error)))
     }
 
     pub fn success_serialize<T: Serialize>(value: Option<T>) -> Self {
@@ -96,6 +100,19 @@ impl ModuleActionResult {
             }
         }
         None
+    }
+}
+
+impl<M: Serialize, E: RickError + 'static> From<Result<M, E>> for ModuleActionResult {
+    fn from(value: Result<M, E>) -> Self {
+        match value {
+            Ok(_val) => {
+                ModuleActionResult::success_serialize(Some(_val))
+            }
+            Err(_err) => {
+                Self(Err(Box::new(_err)))
+            }
+        }
     }
 }
 
@@ -132,7 +149,7 @@ impl ModuleActionManager {
         if let Some(_action_func) = map.get(operate) {
             return _action_func(action)
         }
-        ModuleActionResult::fail("non")
+        ModuleActionResult::fail_reason("non")
     }
 
 }

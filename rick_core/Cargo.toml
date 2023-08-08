@@ -8,7 +8,9 @@ edition = "2021"
 [dependencies]
 sqlite = "0.31"
 chrono = "0.4"
-
+tauri = { version = "1.3", features = ["shell-open"] }
+serde = { version = "1.0.144" }
+serde_json = { version = "1.0.85" }
 
 [dependencies.rick_core_macro]
 path = "rick_core_macro"

@@ -2125,7 +2125,10 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "rick_core_macro",
+ "serde",
+ "serde_json",
  "sqlite",
+ "tauri",
 ]
 
 [[package]]

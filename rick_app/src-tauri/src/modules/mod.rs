@@ -1,7 +1,10 @@
 use crate::app::application::Application;
 use crate::modules::sqlite_module::SqliteModule;
 
-pub mod sqlite_module;
+mod sqlite_module;
+
+pub use sqlite_module::{SqliteAction, app_db};
+
 
 pub fn init_modules(app: Application) -> Application{
     let manager = app.module_manager();

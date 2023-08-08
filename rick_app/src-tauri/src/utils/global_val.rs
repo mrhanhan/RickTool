@@ -48,6 +48,14 @@ impl<T> GlobalVal<T> {
     }
 }
 
+/// 定义全局变量
+/// ```
+/// global_val!(变量名称, 类型)
+/// ```
+/// 使用变量
+/// ```
+/// let val = global_val!(变量名称);
+/// ```
 #[macro_export]
 macro_rules! global_val {
     ($name:ident, $type:ty) => {

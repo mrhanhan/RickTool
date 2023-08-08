@@ -1,3 +1,4 @@
+use tauri::App;
 use crate::sqlite::SqlError;
 
 /// 异常数据
@@ -47,8 +48,8 @@ impl RickError for AppError {
     }
 }
 
-impl From<&dyn RickError> for AppError {
-    fn from(value: &dyn RickError) -> Self {
+impl<E: RickError> From<&E> for AppError {
+    fn from(value: &E) -> Self {
         Self {
             code: value.code(),
             message: value.message(),

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use rick_core::error::{AppError, RickError};
 use crate::global::RickInvoke;
 
 /// 结果
@@ -51,6 +52,7 @@ impl<'a, T: Serialize> ServiceResult<'a, T> {
 }
 
 
+
 /// 服务
 pub trait Service {
     /// 服务
@@ -58,7 +60,7 @@ pub trait Service {
 }
 
 
-struct ClosureFnService<F: Fn(RickInvoke)> {
+struct ClosureFnService<F> {
     _func: F
 }
 
@@ -68,7 +70,6 @@ impl<F: Fn(RickInvoke)> Service for ClosureFnService<F> {
         f(action);
     }
 }
-
 
 /// 服务注册
 #[derive(Clone, Default)]
@@ -102,6 +103,91 @@ impl ServiceRegister {
             match data {
                 Ok(_data) => {
                     func(invoke, _data);
+                }
+                Err(_err) => {
+                    invoke.resolver.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
+                }
+            }
+        };
+        let service_box: Box<dyn Service> = Box::new(ClosureFnService {_func: _c});
+        self.register(operate.into(), service_box);
+    }
+
+    pub fn register_closure_fn<M, E, F, T: DeserializeOwned, O: Into<String>>(&self, operate: O, func: F)
+        where M: Serialize, E: RickError + 'static, F: (Fn(T) -> Result<M, E>) + Send + 'static
+    {
+        let _c = move |invoke: RickInvoke| {
+            let data = T::deserialize(invoke.message.payload());
+            match data {
+                Ok(_data) => {
+                    match func(_data) {
+                        Ok(_result_data) => {
+                            invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                        }
+                        Err(_err) => {
+                            invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                        }
+                    }
+                }
+                Err(_err) => {
+                    invoke.resolver.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
+                }
+            }
+        };
+        let service_box: Box<dyn Service> = Box::new(ClosureFnService {_func: _c});
+        self.register(operate.into(), service_box);
+    }
+
+    pub fn register_run_fn<M, E, F, O: Into<String>>(&self, operate: O, func: F)
+        where M: Serialize, E: RickError + 'static, F: (Fn() -> Result<M, E>) + Send + 'static
+    {
+        let _c = move |invoke: RickInvoke| {
+            match func() {
+                Ok(_result_data) => {
+                    invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                }
+                Err(_err) => {
+                    invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                }
+            }
+        };
+        let service_box: Box<dyn Service> = Box::new(ClosureFnService {_func: _c});
+        self.register(operate.into(), service_box);
+    }
+
+    pub fn register_invoke_fn<M, E, F, O: Into<String>>(&self, operate: O, func: F)
+        where M: Serialize, E: RickError + 'static, F: (Fn(&RickInvoke) -> Result<M, E>) + Send + 'static
+    {
+        let _c = move |invoke: RickInvoke| {
+            match func(&invoke) {
+                Ok(_result_data) => {
+                    invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                }
+                Err(_err) => {
+                    invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                }
+            }
+        };
+        let service_box: Box<dyn Service> = Box::new(ClosureFnService {_func: _c});
+        self.register(operate.into(), service_box);
+    }
+
+    /// 注册闭包函数
+    pub fn register_unit_fn<M, E, F, T: DeserializeOwned, O: Into<String>>(&self, operate: O, func: F)
+    where M: Serialize, E: RickError + 'static, F: (Fn(&RickInvoke, T) -> Result<M, E>) + Send + 'static
+    {
+        let _c = move |invoke: RickInvoke| {
+            let data = T::deserialize(invoke.message.payload());
+            match data {
+                Ok(_data) => {
+                    match func(&invoke, _data) {
+                        Ok(_result_data) => {
+                            invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                        }
+                        Err(_err) => {
+                            invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                        }
+                    }
                 }
                 Err(_err) => {
                     invoke.resolver.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))

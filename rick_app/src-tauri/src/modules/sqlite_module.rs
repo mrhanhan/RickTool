@@ -93,8 +93,10 @@ impl Module for SqliteModule {
         if !data_dir.is_dir() || !data_dir.exists() {
             create_dir_all(&data_dir).unwrap();
         }
+        let db_file = String::from(data_dir.join("app.db").to_str().unwrap());
+        println!("数据库文件:{}", &db_file);
         global_val_set!(DB_CONFIG, SqliteConfig {
-            db_file: String::from(data_dir.join("app.db").to_str().unwrap())
+            db_file: db_file
         });
         // 添加操作
         self._manager.add_into(Query, self.query());

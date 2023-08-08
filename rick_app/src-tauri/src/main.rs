@@ -8,6 +8,8 @@ mod global;
 mod modules;
 mod service;
 pub mod model;
+mod seq;
+mod store;
 
 use crate::app::application::{Application, ApplicationEvent};
 use crate::context::{get_application, init_application};

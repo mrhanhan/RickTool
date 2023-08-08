@@ -2,6 +2,7 @@ use crate::app::application::Application;
 use crate::modules::sqlite_module::SqliteModule;
 
 mod sqlite_module;
+mod app_module;
 
 pub use sqlite_module::{SqliteAction, app_db};
 

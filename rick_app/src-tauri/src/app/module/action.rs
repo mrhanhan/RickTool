@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use serde::de::{DeserializeOwned};
 use serde::{Serialize};
-use serde_json::{from_value, to_string, Value};
+use serde_json::{from_value, to_string, to_value, Value};
 use rick_core::error::{AppError, RickError};
 
 pub trait ToAction<'a> {
@@ -35,8 +35,8 @@ impl<'a> ModuleAction<'a> {
     }
     pub fn command_serialize<S: Serialize + ?Sized>(command: &'a str, payload: &S) -> Self {
         let mut _payload: Option<Value> = None;
-        if let Ok(_value) = to_string(&payload) {
-            _payload = Some(Value::from_str(_value.as_str()).unwrap());
+        if let Ok(_value) = to_value(payload) {
+            _payload = Some(_value);
         }
         Self {
             command,

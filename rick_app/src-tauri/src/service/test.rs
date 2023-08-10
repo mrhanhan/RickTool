@@ -11,9 +11,9 @@ pub fn init_test_service(register: &ServiceRegister) {
         let app = get_application();
         if let Some(_sqlite) = app.module_manager().get_module("sqlite") {
             let result = _sqlite.action(ModuleAction::command_serialize(SqliteAction::Query.into(), "select * from user"));
-            invoke.resolver.resolve(ServiceResult::<Option<Value>>::success_data_message(result.get(), "成功"))
+            invoke.resolve(ServiceResult::<Option<Value>>::success_data_message(result.get(), "成功"))
         } else {
-            invoke.resolver.resolve(ServiceResult::<i32>::success_data_message(400, "失败"))
+            invoke.resolve(ServiceResult::<i32>::success_data_message(400, "失败"))
         }
     });
 }

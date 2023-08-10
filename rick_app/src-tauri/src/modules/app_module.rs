@@ -21,7 +21,7 @@ impl Module for AppModule {
 }
 
 const CONFIG_DDL: &str = r"
-    create
+
 ";
 
 impl AppModule {

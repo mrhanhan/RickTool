@@ -1,4 +1,3 @@
-use tauri::App;
 use crate::sqlite::SqlError;
 
 /// 异常数据
@@ -9,17 +8,17 @@ pub trait RickError {
     fn message(&self) -> String;
 }
 
-impl RickError for SqlError {
+impl RickError for sqlite::Error {
     fn code(&self) -> isize {
-        match self.code.as_ref() {
-            Some(_code) => *_code,
-            None => 0
+        match self.code {
+            None => 0,
+            Some(_code) => _code
         }
     }
     fn message(&self) -> String {
         match self.message {
-            Some(ref _str) => _str.clone(),
-            None => String::new()
+            None => String::new(),
+            Some(ref _code) => _code.clone()
         }
     }
 }

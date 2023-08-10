@@ -1,9 +1,14 @@
+mod invoke;
+
 use std::collections::HashMap;
+use std::panic::{catch_unwind, UnwindSafe};
 use std::sync::{Arc, RwLock};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use rick_core::error::{AppError, RickError};
+use crate::app::service::invoke::ServiceInvoke;
 use crate::global::RickInvoke;
+use crate::utils::convert_ref;
 
 /// 结果
 #[derive(Deserialize, Serialize)]
@@ -56,7 +61,7 @@ impl<'a, T: Serialize> ServiceResult<'a, T> {
 /// 服务
 pub trait Service {
     /// 服务
-    fn service(&self, action: RickInvoke);
+    fn service(&self, action: ServiceInvoke);
 }
 
 
@@ -64,8 +69,8 @@ struct ClosureFnService<F> {
     _func: F
 }
 
-impl<F: Fn(RickInvoke)> Service for ClosureFnService<F> {
-    fn service(&self, action: RickInvoke) {
+impl<F: Fn(ServiceInvoke)> Service for ClosureFnService<F> {
+    fn service(&self, action: ServiceInvoke) {
         let f = &self._func;
         f(action);
     }
@@ -79,7 +84,7 @@ pub struct ServiceRegister {
     _sinks: Arc<RwLock<Vec<Box<ServiceSink>>>>
 }
 
-pub type ServiceSink = dyn Fn(RickInvoke) -> Result<(), RickInvoke>;
+pub type ServiceSink = dyn Fn(String, ServiceInvoke) -> Result<(), AppError>;
 
 impl ServiceRegister {
     pub fn new() -> Self {
@@ -88,7 +93,7 @@ impl ServiceRegister {
             _sinks: Arc::new(RwLock::new(Vec::new()))
         }
     }
-    pub fn add_sink(&self, sink: Box<dyn Fn(RickInvoke) -> Result<(), RickInvoke>>) {
+    pub fn add_sink(&self, sink: Box<dyn Fn(String, ServiceInvoke) -> Result<(), AppError>>) {
         self._sinks.write().unwrap().push(Box::new(sink));
     }
     /// 注册服务
@@ -97,15 +102,15 @@ impl ServiceRegister {
         map.entry(operate).or_insert(service);
     }
     /// 注册闭包函数
-    pub fn register_fn<F: Fn(RickInvoke, T) + Send + 'static, T: DeserializeOwned, O: Into<String>>(&self, operate: O, func: F) {
-        let _c = move |invoke: RickInvoke| {
-            let data = T::deserialize(invoke.message.payload());
+    pub fn register_fn<F: Fn(ServiceInvoke, T) + Send + 'static, T: DeserializeOwned, O: Into<String>>(&self, operate: O, func: F) {
+        let _c = move |invoke: ServiceInvoke| {
+            let data = T::deserialize(invoke.data());
             match data {
                 Ok(_data) => {
                     func(invoke, _data);
                 }
                 Err(_err) => {
-                    invoke.resolver.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
+                    invoke.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
                 }
             }
         };
@@ -116,21 +121,21 @@ impl ServiceRegister {
     pub fn register_closure_fn<M, E, F, T: DeserializeOwned, O: Into<String>>(&self, operate: O, func: F)
         where M: Serialize, E: RickError + 'static, F: (Fn(T) -> Result<M, E>) + Send + 'static
     {
-        let _c = move |invoke: RickInvoke| {
-            let data = T::deserialize(invoke.message.payload());
+        let _c = move |invoke: ServiceInvoke| {
+            let data = T::deserialize(invoke.data());
             match data {
                 Ok(_data) => {
                     match func(_data) {
                         Ok(_result_data) => {
-                            invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                            invoke.resolve(ServiceResult::success_data(_result_data))
                         }
                         Err(_err) => {
-                            invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                            invoke.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
                         }
                     }
                 }
                 Err(_err) => {
-                    invoke.resolver.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
+                    invoke.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
                 }
             }
         };
@@ -141,13 +146,13 @@ impl ServiceRegister {
     pub fn register_run_fn<M, E, F, O: Into<String>>(&self, operate: O, func: F)
         where M: Serialize, E: RickError + 'static, F: (Fn() -> Result<M, E>) + Send + 'static
     {
-        let _c = move |invoke: RickInvoke| {
+        let _c = move |invoke: ServiceInvoke| {
             match func() {
                 Ok(_result_data) => {
-                    invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                    invoke.resolve(ServiceResult::success_data(_result_data))
                 }
                 Err(_err) => {
-                    invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                    invoke.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
                 }
             }
         };
@@ -156,15 +161,15 @@ impl ServiceRegister {
     }
 
     pub fn register_invoke_fn<M, E, F, O: Into<String>>(&self, operate: O, func: F)
-        where M: Serialize, E: RickError + 'static, F: (Fn(&RickInvoke) -> Result<M, E>) + Send + 'static
+        where M: Serialize, E: RickError + 'static, F: (Fn(&ServiceInvoke) -> Result<M, E>) + Send + 'static
     {
-        let _c = move |invoke: RickInvoke| {
+        let _c = move |invoke: ServiceInvoke| {
             match func(&invoke) {
                 Ok(_result_data) => {
-                    invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                    invoke.resolve(ServiceResult::success_data(_result_data))
                 }
                 Err(_err) => {
-                    invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                    invoke.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
                 }
             }
         };
@@ -174,23 +179,23 @@ impl ServiceRegister {
 
     /// 注册闭包函数
     pub fn register_unit_fn<M, E, F, T: DeserializeOwned, O: Into<String>>(&self, operate: O, func: F)
-    where M: Serialize, E: RickError + 'static, F: (Fn(&RickInvoke, T) -> Result<M, E>) + Send + 'static
+    where M: Serialize, E: RickError + 'static, F: (Fn(&ServiceInvoke, T) -> Result<M, E>) + Send + 'static
     {
-        let _c = move |invoke: RickInvoke| {
-            let data = T::deserialize(invoke.message.payload());
+        let _c = move |invoke: ServiceInvoke| {
+            let data = T::deserialize(invoke.data());
             match data {
                 Ok(_data) => {
                     match func(&invoke, _data) {
                         Ok(_result_data) => {
-                            invoke.resolver.resolve(ServiceResult::success_data(_result_data))
+                            invoke.resolve(ServiceResult::success_data(_result_data))
                         }
                         Err(_err) => {
-                            invoke.resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                            invoke.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
                         }
                     }
                 }
                 Err(_err) => {
-                    invoke.resolver.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
+                    invoke.reject(ServiceResult::<i32>::fail_reason(format!("参数错误:{}", _err).as_str()))
                 }
             }
         };
@@ -198,36 +203,50 @@ impl ServiceRegister {
         self.register(operate.into(), service_box);
     }
     /// Sink 调用
-    pub fn sink_call(&self, invoke: RickInvoke) -> Result<(), RickInvoke> {
+    pub fn sink_call(&self, command: String, invoke: ServiceInvoke) -> Result<(), AppError> {
         {
             let map = self._service_map.read().unwrap();
-            if let Some(service) = map.get(invoke.message.command()) {
+            if let Some(service) = map.get(command.as_str()) {
                 service.service(invoke);
                 return Ok(());
             }
         }
-        let mut _invoke = invoke;
         {
             let sinks = self._sinks.read().unwrap();
             for sink in sinks.iter() {
-                let result = sink(_invoke);
+                let result = sink(command.clone(), invoke.clone());
                 match result {
                     Ok(_) => {
                         return Ok(());
                     }
-                    Err(invoke) => {
-                        _invoke = invoke;
+                    _ => {
+
                     }
                 }
             }
         }
-        Err(_invoke)
+        invoke.reject(ServiceResult::<i32>::fail_code(404));
+        Ok(())
     }
 
     /// 调用服务
     pub fn call(&self, invoke: RickInvoke) {
-        if let Err(_invoke) = self.sink_call(invoke) {
-            _invoke.resolver.reject(ServiceResult::<i32>::fail_reason("服务不存在"));
+        let service_invoke = ServiceInvoke::from(&invoke);
+        let msg: String = invoke.message.command().into();
+        let _self = Arc::new(self);
+        let _service_ptr = &service_invoke as *const ServiceInvoke as usize;
+
+        let result = catch_unwind(move || {
+            let _service = unsafe {&*(_service_ptr as *const ServiceInvoke)};
+            self.sink_call(msg, _service.clone()).unwrap()
+        });
+        match result {
+            Ok(_) => {
+                service_invoke.send(invoke);
+            }
+            Err(_err) => {
+                invoke.resolver.reject(ServiceResult::<i32>::fail_code(500));
+            }
         }
     }
 }

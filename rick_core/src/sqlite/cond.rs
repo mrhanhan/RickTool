@@ -4,7 +4,7 @@ use crate::sqlite::cond::SqlCondJoin::{And, AndGroup, Or, OrGroup};
 use crate::sqlite::{Connection, SqlError};
 use crate::sqlite::SqlValue::{Float, Null, Number, Text};
 use std::str::FromStr;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 
 pub type ColumnValue = &'static str;
 
@@ -466,7 +466,7 @@ impl SqlWrapper {
                     *index = *index + 1;
                 }
                 Group(_wrapper) => {
-                    _wrapper.process_cond_value(_statement, index);
+                    _wrapper.process_cond_value(_statement, index)?;
                 }
             }
         }

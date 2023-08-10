@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use crate::sqlite::{ColumnValue, done, SaveBind, SqlError, SqlValue, SqlWrapper, Table};
+use crate::sqlite::{ColumnValue, Connection, done, SaveBind, SqlError, SqlValue, SqlWrapper, Table};
 
 pub trait UpdateDatabaseOperate {
     type Model: Table + SaveBind;
 
     /// 保存数据
-    fn save(model: &Self::Model) -> Result<(), SqlError> {
+    fn save(model: &Self::Model) -> Result<usize, SqlError> {
         let mut sql = format!("insert into {} (", Self::Model::table_name());
         let mut values = String::new();
         let columns = Self::Model::columns();
@@ -24,17 +24,17 @@ pub trait UpdateDatabaseOperate {
         let conn = Self::Model::conn();
         let statement = conn.prepare(sql);
         match statement {
-            Ok(mut _statement) => {
+            Ok((mut _statement, _)) => {
                 if let Err(_err) = model.bind(&mut _statement) {
                     return Err(_err);
                 }
-                done(_statement)
+                done(_statement, &conn)
             }
             Err(_err) => Err(_err)
         }
     }
     /// 保存数据
-    fn save_batch(models: &[&Self::Model]) -> Result<(), SqlError> {
+    fn save_batch(models: &[&Self::Model]) -> Result<usize, SqlError> {
         let mut sql = format!("insert into {} (", Self::Model::table_name());
         let mut values = String::from("(");
         let columns = Self::Model::columns();
@@ -57,7 +57,7 @@ pub trait UpdateDatabaseOperate {
         let conn = Self::Model::conn();
         let statement = conn.prepare(sql);
         match statement {
-            Ok(mut _statement) => {
+            Ok((mut _statement, conn)) => {
                 for index in 0..models.len() {
                     let module = models[index];
                     println!("开始索引:{}", (index * columns.len()) + 1 );
@@ -65,13 +65,13 @@ pub trait UpdateDatabaseOperate {
                         return Err(_err);
                     }
                 }
-                done(_statement)
+                done(_statement, &conn)
             }
             Err(_err) => Err(_err)
         }
     }
     /// 批量保存
-    fn save_batch_vec(models: Vec<Self::Model>) -> Result<(), SqlError> {
+    fn save_batch_vec(models: Vec<Self::Model>) -> Result<usize, SqlError> {
         let mut vec: Vec<&Self::Model> = Vec::new();
         for x in models.iter() {
             vec.push(x);
@@ -79,15 +79,16 @@ pub trait UpdateDatabaseOperate {
         Self::save_batch(vec.as_slice())
     }
     /// 批量保存
-    fn save_batch_vec_ref(models: Vec<&Self::Model>) -> Result<(), SqlError> {
+    fn save_batch_vec_ref(models: Vec<&Self::Model>) -> Result<usize, SqlError> {
         Self::save_batch(models.as_slice())
     }
     /// 删除数科
-    fn delete(wrapper: &SqlWrapper) -> Result<(), SqlError> {
+    fn delete(wrapper: &SqlWrapper) -> Result<usize, SqlError> {
         let sql = format!("delete from {}", Self::Model::table_name());
-        match wrapper.process(sql, &Self::Model::conn()) {
+        let conn = Self::Model::conn();
+        match wrapper.process(sql, &conn) {
             Ok(_statement) => {
-                done(_statement)
+                done(_statement, &conn)
             }
             Err(_err) => {
                 Err(_err)
@@ -95,11 +96,11 @@ pub trait UpdateDatabaseOperate {
         }
     }
     /// 根据自定字段删除
-    fn delete_by(column: ColumnValue, value: SqlValue) -> Result<(), SqlError> {
+    fn delete_by(column: ColumnValue, value: SqlValue) -> Result<usize, SqlError> {
         Self::delete(SqlWrapper::new().eq(column, value))
     }
     /// 删除所有字段
-    fn delete_all() -> Result<(), SqlError> {
+    fn delete_all() -> Result<usize, SqlError> {
         Self::delete(&SqlWrapper::new())
     }
 
@@ -108,13 +109,14 @@ pub trait UpdateDatabaseOperate {
         UpdateWrapper::new()
     }
     /// 根据ID修改
-    fn update_by_id<I: Into<SqlValue>>(model: &Self::Model, value: I) -> Result<(), SqlError> {
+    fn update_by_id<I: Into<SqlValue>>(model: &Self::Model, value: I) -> Result<usize, SqlError> {
         if let None = Self::Model::id_column() {
             return Err(SqlError {code: None, message: Some("请配置ID字段: #[column(id = true)]".into())});
         }
         let update = Self::update();
         model.update_set(update, false)
-            .update(SqlWrapper::new().eq(Self::Model::id_column().unwrap(), value.into()))
+            .update(SqlWrapper::new()
+                .eq(Self::Model::id_column().unwrap(), value.into()))
     }
 }
 
@@ -125,7 +127,7 @@ pub struct UpdateWrapper<T: Table> {
     _marker: PhantomData<T>
 }
 
-impl<T: Table> UpdateWrapper<T> {
+impl<T: Table > UpdateWrapper<T> {
 
     fn new() -> Self{
         Self {
@@ -139,7 +141,7 @@ impl<T: Table> UpdateWrapper<T> {
         self
     }
     /// 更新
-    pub fn update(self, wrapper: &SqlWrapper) -> Result<(), SqlError> {
+    pub fn update(self, wrapper: &SqlWrapper) -> Result<usize, SqlError> {
         let mut sql = format!("update {}", T::table_name());
         let mut first = true;
         for (key, _) in &self.map {
@@ -160,7 +162,7 @@ impl<T: Table> UpdateWrapper<T> {
         sql.push_str(cond_sql.as_str());
         cond_sql.clear();
         match T::conn().prepare(sql) {
-            Ok(mut _statement) => {
+            Ok((mut _statement, conn)) => {
                 // 处理当前参数
                 for (_, value) in self.map {
                     if let Err(_err) = _statement.bind((index, &value)) {
@@ -171,7 +173,7 @@ impl<T: Table> UpdateWrapper<T> {
                 if let Err(_err) = wrapper.process_cond_value(&mut _statement, &mut index) {
                     return Err(_err);
                 }
-                done(_statement)
+                done(_statement, conn)
             }
             Err(_err) => {
                 Err(_err)

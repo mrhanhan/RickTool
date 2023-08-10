@@ -363,7 +363,7 @@ impl SqlWrapper {
         // 绑定数据
         let _statement = conn.prepare(new_sql);
         match _statement {
-            Ok(mut _statement) => {
+            Ok((mut _statement, _)) => {
                 // 绑定数据
                 let mut index = 1usize;
                 if let Err(_err) = self.process_cond_value(&mut _statement, &mut index) {

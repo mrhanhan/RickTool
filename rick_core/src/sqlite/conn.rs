@@ -12,12 +12,16 @@ impl Connection {
     }
 
     /// Statement
-    pub fn prepare<T: AsRef<str>>(&self, statement: T) -> Result<Statement, SqlError> {
-        self.0.prepare(statement)
+    pub fn prepare<T: AsRef<str>>(&self, statement: T) -> Result<(Statement, &Self), SqlError> {
+        self.0.prepare(statement).map(|f|{(f, self)})
     }
     /// 执行
     pub fn execute<T: AsRef<str>>(&self, statement: T) -> Result<(), SqlError> {
         self.0.execute(statement)
+    }
+
+    pub fn change_count(&self) -> usize {
+        self.0.change_count()
     }
     
 }

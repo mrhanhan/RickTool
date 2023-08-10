@@ -13,7 +13,7 @@ pub fn init_service(app: Application) -> Application{
     app
 }
 
-pub fn common_result<T: RickError, S>(result: Result<(), T>, val: S) -> RickResult<S> {
+pub fn common_result<T: RickError, S>(result: Result<usize, T>, val: S) -> RickResult<S> {
     match result {
         Ok(_) => {
             Ok(val)

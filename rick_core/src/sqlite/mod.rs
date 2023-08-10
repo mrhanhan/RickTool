@@ -59,12 +59,12 @@ impl<T: Table + SaveBind> UpdateDatabaseOperate for T {
 }
 
 
-fn done(mut _statement: Statement) -> Result<(), SqlError>{
+fn done(mut _statement: Statement, connection: &Connection) -> Result<usize, SqlError>{
     loop {
         match _statement.next() {
             Ok(_state) => {
                 if let Done = _state {
-                    return Ok(())
+                    return Ok(connection.change_count())
                 }
             }
             Err(_err) => {

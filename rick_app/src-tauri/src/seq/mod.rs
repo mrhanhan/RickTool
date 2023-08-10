@@ -33,7 +33,7 @@ pub fn increase_table<T: Table>(_a: &T) -> i32 {
 pub fn get_table_max_id(table_name: &str, id_column: &str) -> i32 {
     let conn = Seq::conn();
     let statement = conn.prepare(format!("select max({}) c from {}", id_column, table_name)).unwrap();
-    for r in statement {
+    for r in statement.0 {
         if let Ok(_r) = r {
             let v: SqlValue = _r.read("c");
             return v.to();

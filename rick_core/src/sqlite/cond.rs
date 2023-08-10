@@ -318,7 +318,7 @@ impl SqlWrapper {
     }
 
     /// 连接
-    pub fn process<'l>(&self, sql: String, conn: &'l Connection) -> Result<Statement<'l>, SqlError>{
+    pub fn process<'l>(&self, sql: String, conn: &'l Connection) -> Result<(Statement<'l>, &'l Connection), SqlError>{
         let mut cond_sql = String::new();
         let mut append_sql = String::new();
         let mut cond_index: usize = 0;
@@ -372,7 +372,7 @@ impl SqlWrapper {
                 if let Err(_err) = self.process_append_args(&mut _statement, &mut index) {
                     return Err(_err);
                 }
-                Ok(_statement)
+                Ok((_statement, conn))
             }
             Err(_err) => Err(_err)
         }

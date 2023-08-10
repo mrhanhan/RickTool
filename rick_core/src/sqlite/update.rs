@@ -85,10 +85,9 @@ pub trait UpdateDatabaseOperate {
     /// 删除数科
     fn delete(wrapper: &SqlWrapper) -> Result<usize, SqlError> {
         let sql = format!("delete from {}", Self::Model::table_name());
-        let conn = Self::Model::conn();
-        match wrapper.process(sql, &conn) {
-            Ok(_statement) => {
-                done(_statement, &conn)
+        match wrapper.process(sql, &Self::Model::conn()) {
+            Ok((_statement, conn)) => {
+                done(_statement, conn)
             }
             Err(_err) => {
                 Err(_err)

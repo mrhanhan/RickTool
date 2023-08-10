@@ -50,7 +50,7 @@ impl SqliteModule {
                  if let Err(_e) = statement {
                      return ModuleActionResult::fail(_e);
                  }
-                let _statement = statement.unwrap();
+                let _statement = statement.unwrap().0;
                 let mut list: Vec<HashMap<String, SqlValue>> = Vec::new();
                 let names: Vec<String> = _statement.column_names().iter().cloned().collect();
                 for row in _statement {

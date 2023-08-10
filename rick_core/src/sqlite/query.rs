@@ -18,7 +18,7 @@ pub trait QueryDatabaseOperate {
         // 获取连接
         let sql = format!("select * from {}", Self::Model::table_name());
         match wrapper.process(sql, &Self::Model::conn()) {
-            Ok(_statement) => {
+            Ok((_statement, _)) => {
                 let mut result: Vec<Self::Model> = Vec::new();
                 for row in _statement {
                     if let Ok(_row) = row {

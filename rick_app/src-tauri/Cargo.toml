@@ -16,7 +16,9 @@ tauri-build = { version = "1.3", features = [] }
 rick_core = { path = "../../rick_core" }
 rick_core_macro = { path = "../../rick_core/rick_core_macro" }
 sqlite = "0.31"
-tauri = { version = "1.3", features = ["shell-open"] }
+tauri = { version = "1.3", features = ["shell-open", "dialog"] }
 serde = { version = "1.0.144" }
 serde_json = { version = "1.0.85" }
 futures = { version = "0.3.28", features = ["async-await", "executor", "std"] }
+image = "0.24"
+imageproc = "0.23"

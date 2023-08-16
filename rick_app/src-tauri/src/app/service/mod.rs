@@ -1,14 +1,15 @@
 mod invoke;
 
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::panic::{catch_unwind, UnwindSafe};
 use std::sync::{Arc, RwLock};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use rick_core::error::{AppError, RickError};
-use crate::app::service::invoke::ServiceInvoke;
+pub use crate::app::service::invoke::ServiceInvoke;
+use crate::context::get_application;
 use crate::global::RickInvoke;
-use crate::utils::convert_ref;
 
 /// 结果
 #[derive(Deserialize, Serialize)]
@@ -57,7 +58,6 @@ impl<'a, T: Serialize> ServiceResult<'a, T> {
 }
 
 
-
 /// 服务
 pub trait Service {
     /// 服务
@@ -65,8 +65,16 @@ pub trait Service {
 }
 
 
-struct ClosureFnService<F> {
+pub struct ClosureFnService<F> {
     _func: F
+}
+
+impl<F> ClosureFnService<F> {
+    pub fn new(_func: F) -> Box<Self> {
+        Box::new(Self {
+            _func
+        })
+    }
 }
 
 impl<F: Fn(ServiceInvoke)> Service for ClosureFnService<F> {
@@ -229,6 +237,34 @@ impl ServiceRegister {
         Ok(())
     }
 
+    /// 异步调用
+    pub fn async_call(&self, invoke: RickInvoke) {
+        let app = get_application();
+        let RickInvoke {message, resolver} = invoke;
+        let this = self.clone();
+        app.thread_pool().submit(Box::new(move || {
+            let service_invoke = ServiceInvoke::from(&message);
+            let msg: String = message.command().into();
+            let _self = Arc::new(&this);
+            let _service_ptr = &service_invoke as *const ServiceInvoke as usize;
+
+            println!("{:#?}", service_invoke.data());
+            let result = catch_unwind(move || {
+                let _service = unsafe {&*(_service_ptr as *const ServiceInvoke)};
+                _self.sink_call(msg, _service.clone()).unwrap()
+            });
+
+            match result {
+                Ok(_) => {
+                    service_invoke.send_resolver(resolver);
+                }
+                Err(_err) => {
+                    resolver.reject(ServiceResult::<i32>::fail_code(500));
+                }
+            }
+        })).expect("");
+    }
+
     /// 调用服务
     pub fn call(&self, invoke: RickInvoke) {
         let service_invoke = ServiceInvoke::from(&invoke);
@@ -236,10 +272,12 @@ impl ServiceRegister {
         let _self = Arc::new(self);
         let _service_ptr = &service_invoke as *const ServiceInvoke as usize;
 
+        println!("{:#?}", service_invoke.data());
         let result = catch_unwind(move || {
             let _service = unsafe {&*(_service_ptr as *const ServiceInvoke)};
             self.sink_call(msg, _service.clone()).unwrap()
         });
+
         match result {
             Ok(_) => {
                 service_invoke.send(invoke);

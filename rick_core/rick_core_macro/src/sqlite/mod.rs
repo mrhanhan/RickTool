@@ -11,7 +11,8 @@ use crate::utils::find_attribute;
 /// 获取字段信息
 pub fn get_table_field_info(_field: Field) -> TableFieldInfo {
     let mut field = TableFieldInfo {column: String::new(), exclude: false, id: false,
-        field: _field.ident.unwrap().to_string(), ty: _field.ty.clone(), default: None};
+        field: _field.ident.unwrap().to_string(), ty: _field.ty.clone(),
+        default: None};
     if let Some(_column_attribute) = find_attribute(_field.attrs, "column") {
         if let Ok(_meta) = TableFieldMeta::from_meta(&_column_attribute.meta) {
             if let Some(_exclude) = _meta.exclude {

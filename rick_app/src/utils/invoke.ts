@@ -1,6 +1,6 @@
 import {invoke} from "@tauri-apps/api";
 
 
-export async function call(api: string, arg?: any) {
-    return invoke(api, arg);
+export async function call<T>(api: string, arg?: any) {
+    return invoke<T>(api, arg);
 }

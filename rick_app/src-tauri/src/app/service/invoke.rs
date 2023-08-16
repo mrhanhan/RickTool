@@ -1,8 +1,9 @@
 use std::sync::{Arc, Mutex};
-use serde::Serialize;
-use serde_json::{to_value, Value};
+use rick_core::error::AppError;
+use serde::{Serialize, de::DeserializeOwned};
+use serde_json::{to_value, Value, from_value};
 use tauri::{StateManager, Window};
-use crate::global::RickInvoke;
+use crate::global::{RickInvoke, RickInvokeMessage, RickInvokeResolver};
 
 /// 服务调用
 #[derive(Clone)]
@@ -22,6 +23,14 @@ impl ServiceInvoke {
     pub fn data(&self) -> Value {
         self.data.clone()
     }
+
+    pub fn get<T: DeserializeOwned>(&self) -> Result<T, AppError> {
+        match from_value::<T>(self.data.clone()) {
+            Ok(_data) => Ok(_data),
+            Err(_err) => Err(AppError::new(500, _err.to_string())),
+        }
+    }
+
     pub fn window(&self) -> Window {
         self.window.clone()
     }
@@ -55,6 +64,20 @@ impl ServiceInvoke {
             invoke.resolver.resolve(value);
         }
     }
+    pub fn send_resolver(self, resolver: RickInvokeResolver) {
+        let exception = {*(&self).exception.lock().unwrap()};
+        let value = {
+            match *(&self).value.lock().unwrap() {
+                None => {Value::Null}
+                Some(ref _val) => _val.clone()
+            }};
+        if exception {
+            resolver.reject(value);
+        } else {
+            resolver.resolve(value);
+        }
+    }
+
 }
 
 impl From<&RickInvoke> for ServiceInvoke {
@@ -64,6 +87,18 @@ impl From<&RickInvoke> for ServiceInvoke {
             data: value.message.payload().clone(),
             window: value.message.window(),
             state: value.message.state().clone(),
+            value: Arc::new(Mutex::new(None))
+        }
+    }
+}
+
+impl From<&RickInvokeMessage> for ServiceInvoke {
+    fn from(message: &RickInvokeMessage) -> Self {
+        ServiceInvoke {
+            exception: Arc::new(Mutex::new(false)),
+            data: message.payload().clone(),
+            window: message.window(),
+            state: message.state().clone(),
             value: Arc::new(Mutex::new(None))
         }
     }

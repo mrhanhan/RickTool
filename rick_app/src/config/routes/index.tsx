@@ -3,6 +3,7 @@ import { ItemType, MenuItemGroupType } from 'antd/lib/menu/hooks/useItems';
 import { useRoutes } from 'react-router'
 import MainLayout from '../../layout/main-layout';
 import { indexRoutes, MenuAndRoute } from './config';
+import * as React from "react";
 export const AppRoute = () => useRoutes([
     {
         path: '/',
@@ -13,7 +14,7 @@ export const AppRoute = () => useRoutes([
 
 
 
-export declare type MenuItemType = ItemType & { path: string, children?: MenuItemType[] };
+export declare type MenuItemType = ItemType & { path: string, label: React.ReactNode | null, children?: MenuItemType[] };
 
 const getMenuList = () => {
     let menuList: MenuItemType[] = [];
@@ -50,3 +51,29 @@ const getMenuList = () => {
 };
 
 export const MenuList = getMenuList();
+
+export const getMenuPath = (path: string): MenuItemType[] => {
+    let items: MenuItemType[]= [];
+    function each(path: string, item: MenuItemType): boolean {
+        if (item.path === path) {
+            items.push(item);
+            return true;
+        }
+        if (item.children?.length) {
+            for (const child of item.children) {
+                if (each(path, child)) {
+                    items.push(item);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    for (const item of MenuList) {
+        if (each(path, item)) {
+            return items.reverse();
+        }
+    }
+    return [];
+}

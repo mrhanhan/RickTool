@@ -2,7 +2,7 @@ use crate::app::application::Application;
 use crate::app::module::{Module, ModuleAction, ModuleError, ModuleMeta};
 use crate::modules::SqliteAction;
 
-struct AppModule;
+pub struct AppModule;
 
 
 impl Module for AppModule {
@@ -20,14 +20,13 @@ impl Module for AppModule {
     }
 }
 
-const CONFIG_DDL: &str = r"
-
-";
+const CONFIG_DDL: &str = include_str!("../../../../sql/default.sql");
 
 impl AppModule {
 
     /// 初始化DDL
     fn init_db_ddl(&self, app: Application) {
+        println!("初始化DDL: {}", CONFIG_DDL);
         if let Some(_sqlite) = app.module_manager().get_module("sqlite") {
             _sqlite.action(ModuleAction::command_serialize(SqliteAction::Execute.into(), CONFIG_DDL));
         }

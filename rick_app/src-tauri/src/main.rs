@@ -16,7 +16,7 @@ use crate::context::{get_application, init_application};
 use crate::global::RickInvoke;
 
 fn handler(invoke: RickInvoke) {
-    get_application().service_register().call(invoke);
+    get_application().service_register().async_call(invoke);
 }
 
 fn main() {

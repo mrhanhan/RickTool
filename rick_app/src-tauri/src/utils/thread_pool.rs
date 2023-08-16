@@ -6,7 +6,7 @@ use std::{
 
 use super::{thread_signal::ThreadSignal};
 
-pub(crate) type Task = Box<dyn Fn()>;
+pub(crate) type Task = Box<dyn FnOnce()>;
 
 /// 任务队列
 pub(crate) struct TaskQueue(RwLock<Vec<Task>>, ThreadSignal);

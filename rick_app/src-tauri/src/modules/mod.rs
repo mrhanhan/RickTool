@@ -10,5 +10,6 @@ pub use sqlite_module::{SqliteAction, app_db};
 pub fn init_modules(app: Application) -> Application{
     let manager = app.module_manager();
     manager.add_module(Box::new(SqliteModule::new()));
+    manager.add_module(Box::new(app_module::AppModule {}));
     app
 }

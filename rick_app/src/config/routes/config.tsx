@@ -1,7 +1,7 @@
 import { HomeOutlined, LaptopOutlined, AppstoreOutlined, DropboxOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
 import AppPage from "../../pages/app";
 import React from "react";
+import AppRuntimePage from "../../pages/app/runtime";
 
 export declare type Node = React.ReactNode | JSX.Element;
 export declare type MenuAndRoute = {
@@ -21,41 +21,27 @@ export const indexRoutes: MenuAndRoute[] = [
 		element: <AppPage/>,
 		key: 'IndexPage',
 		icon: <HomeOutlined/>,
-		label: <Link to='/'>首页</Link>
+		label: <span>首页</span>
 	},
 	{
-		path: '/environment',
-		key: 'EnvironmentPage',
+		path: '/app/runtime',
+		key: 'AppRuntimePage',
 		icon: <DropboxOutlined />,
-		label: <Link to='/environment'>环境变量</Link>,
-		children: [
-			{
-				path: '',
-				key: 'EnvironmentListPage',
-				menu: true,
-				element: <AppPage />,
-				label: <Link to='/environment'>环境变量</Link>,
-			},
-			{
-				path: 'create',
-				key: 'CreateEnvironmentPage',
-				element: <AppPage />,
-				label: <Link to='/environment/create'>新建环境</Link>,
-			}
-		]
+		element: <AppRuntimePage/>,
+		label: <span>执行环境</span>
 	},
 	{
 		path: '/app',
 		element: <AppPage/>,
 		key: 'AppPage',
 		icon: <AppstoreOutlined />,
-		label: <Link to='/app'>VApp</Link>
+		label: <span>VApp</span>
 	},
 	{
 		path: 'terminal/local',
 		element: <AppPage/>,
 		key: 'LocalTerminalPage',
 		icon: <LaptopOutlined />,
-		label: <Link to='/terminal/local'>本地终端</Link>,
+		label: <span>本地终端</span>,
 	}
 ];

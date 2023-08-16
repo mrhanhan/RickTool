@@ -1,4 +1,4 @@
-use rick_core::sqlite::{QueryDatabaseOperate, SqlWrapper, UpdateDatabaseOperate};
+use rick_core::sqlite::*;
 use rick_core_macro::ITable;
 use crate::modules::app_db;
 
@@ -14,7 +14,7 @@ pub struct Seq {
 }
 
 
-pub fn increase_table<T: Table>(_a: &T) -> i32 {
+pub fn increase_table<T: Table>() -> i32 {
     let code = T::table_name();
     // 判断code 是否存在
     if let Some(mut _seq) = Seq::select_by_id(code).unwrap() {

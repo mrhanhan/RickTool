@@ -19,6 +19,9 @@ body,
     background-color: #141414;
 }
 
+#root .ant-menu-submenu a {
+    color: inherit;
+}
 ::-webkit-scrollbar {
     /*滚动条整体样式*/
     width: 3px;
@@ -56,3 +59,23 @@ body,
     filter: drop-shadow(0 0 2em #61dafb);
 }
 
+.ant-card,
+.ant-card .ant-card-body {
+    border-radius: 0px;
+}
+
+:root {
+    --active-border-color: #1668dc;
+    --active-color: #1668dc;
+    --active-background-color: #111a2c;
+}
+
+.rick-can-selected {
+
+}
+.rick-can-selected:hover,
+.rick-can-selected.rick-selected {
+    outline-color: var(--active-border-color);
+    color: var(--active-color);
+    background-color: var(--active-background-color);
+}

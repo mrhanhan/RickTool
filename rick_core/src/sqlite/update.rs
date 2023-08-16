@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use crate::sqlite::{ColumnValue, Connection, done, SaveBind, SqlError, SqlValue, SqlWrapper, Table};
+use crate::sqlite::{ColumnValue, done, SaveBind, SqlError, SqlValue, SqlWrapper, Table};
 
 pub trait UpdateDatabaseOperate {
     type Model: Table + SaveBind;
@@ -34,7 +34,12 @@ pub trait UpdateDatabaseOperate {
         }
     }
     /// 保存数据
-    fn save_batch(models: &[&Self::Model]) -> Result<usize, SqlError> {
+    fn save_batch(models: &[Self::Model]) -> Result<usize, SqlError> {
+        let data: Vec<&Self::Model> = models.into_iter().map(|i|{i}).collect();
+        Self::save_batch_ref(data.as_slice())
+    }
+    /// 保存数据
+    fn save_batch_ref(models: &[&Self::Model]) -> Result<usize, SqlError> {
         let mut sql = format!("insert into {} (", Self::Model::table_name());
         let mut values = String::from("(");
         let columns = Self::Model::columns();
@@ -76,11 +81,11 @@ pub trait UpdateDatabaseOperate {
         for x in models.iter() {
             vec.push(x);
         }
-        Self::save_batch(vec.as_slice())
+        Self::save_batch_ref(vec.as_slice())
     }
     /// 批量保存
     fn save_batch_vec_ref(models: Vec<&Self::Model>) -> Result<usize, SqlError> {
-        Self::save_batch(models.as_slice())
+        Self::save_batch_ref(models.as_slice())
     }
     /// 删除数科
     fn delete(wrapper: &SqlWrapper) -> Result<usize, SqlError> {
@@ -98,6 +103,11 @@ pub trait UpdateDatabaseOperate {
     fn delete_by(column: ColumnValue, value: SqlValue) -> Result<usize, SqlError> {
         Self::delete(SqlWrapper::new().eq(column, value))
     }
+    /// 根据自定字段删除
+    fn delete_by_id<A: Into<SqlValue>>(value: A) -> Result<usize, SqlError> {
+        Self::delete(SqlWrapper::new().eq(Self::Model::id_column().unwrap(), value))
+    }
+
     /// 删除所有字段
     fn delete_all() -> Result<usize, SqlError> {
         Self::delete(&SqlWrapper::new())

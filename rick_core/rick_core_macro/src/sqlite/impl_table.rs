@@ -1,4 +1,5 @@
-use proc_macro::TokenStream;
+use proc_macro::{TokenStream};
+use proc_macro2::Spacing::{Alone, Joint};
 use quote::{format_ident, quote};
 use syn::{DeriveInput, parse_str, Path};
 use crate::sqlite::meta::{TableInfo};
@@ -56,6 +57,9 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
             });
         }
         if _column_info.exclude {
+            let ty = process_generic(quote!{#ty});
+            // let ty = process_generic(quote!{Option::<i32>::default()});
+            // 处理泛型
             from_fields.extend(quote!{
                 #f: #ty::default()
             });
@@ -70,7 +74,6 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
     }
     let tokens = _call_token_result.unwrap();
     let mut output = quote! {
-        use rick_core::sqlite::{SqlValue, To, SaveBind, Table };
         impl rick_core::sqlite::Table for #struct_name {
             fn table_name() -> &'static str {
                 #table_name
@@ -114,4 +117,27 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
         }
     });
     output.into()
+}
+
+fn process_generic(ty: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    let mut vec = Vec::new();
+    let mut count = 0;
+    for token in ty {
+        if let proc_macro2::TokenTree::Punct(_punct)  = token {
+            if _punct.as_char() == '<'{
+                if count == 0 {
+                    vec.push(proc_macro2::TokenTree::Punct(proc_macro2::Punct::new(':', Joint)));
+                    vec.push(proc_macro2::TokenTree::Punct(proc_macro2::Punct::new(':', Alone)));
+                }
+               count = count + 1;
+            }
+            if _punct.as_char() == '>'{
+                count = count - 1;
+            }
+            vec.push(proc_macro2::TokenTree::Punct(_punct));
+        } else {
+            vec.push(token);
+        }
+    }
+    proc_macro2::TokenStream::from_iter(vec.into_iter())
 }

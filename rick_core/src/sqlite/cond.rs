@@ -115,6 +115,16 @@ impl To<String> for SqlValue {
         From::<&SqlValue>::from(self)
     }
 }
+
+impl<T: From<SqlValue>> To<Option<T>> for SqlValue {
+    fn to(&self) -> Option<T> {
+        if let Null = self {
+            return None
+        } else {
+            return Some(T::from(self.clone()))
+        }
+    }
+}
 sql_value_into_number!(u32);
 sql_value_into_number!(i32);
 sql_value_into_number!(usize);

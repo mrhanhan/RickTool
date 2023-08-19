@@ -2522,6 +2522,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rick_loader"
+version = "0.1.0"
+
+[[package]]
 name = "rick_net"
 version = "0.1.0"
 dependencies = [

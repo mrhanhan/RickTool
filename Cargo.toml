@@ -4,6 +4,7 @@ members = [
     "rick_app/src-tauri",
     "rick_core",
     "rick_net",
+    "rick_loader",
     "rick_core/rick_core_macro"
 ]
 

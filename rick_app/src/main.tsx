@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles.css";
 import {listen} from "@tauri-apps/api/event";
-import {call} from "./utils/invoke";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

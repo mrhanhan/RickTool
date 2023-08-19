@@ -10,7 +10,7 @@ import {
     List,
     message,
     Modal,
-    Row,
+    Row, Spin,
     Tag
 } from "antd";
 import {useEffect, useState} from "react";
@@ -22,10 +22,14 @@ import {
     saveAppRuntime, updateAppRuntime
 } from "./app-runtime-request";
 import {commonProcess, errorMessage} from "../../../model";
-import {DeleteOutlined, EditOutlined, PlusSquareOutlined} from "@ant-design/icons";
+import {DeleteOutlined, EditOutlined, FileOutlined, PlusSquareOutlined} from "@ant-design/icons";
+import {dirDialogOpen} from "../../../utils/common";
 
 
 function AppRuntimeItemInput(props: AppRuntimeItemInputProps) {
+
+    const [selectLoading, setSelectLoading] = useState(false);
+    const [messageApi, messageContextHolder] = message.useMessage();
     const onAddNewItem = () => {
         if (!!props.value) {
             props.onChange?.([...props.value!, {code: '', value: ''}]);
@@ -49,7 +53,18 @@ function AppRuntimeItemInput(props: AppRuntimeItemInputProps) {
           props.onChange?.(data);
       };
     };
+    const onSelectDirPath = (index: number) => {
+        setSelectLoading(true);
+        commonProcess(dirDialogOpen({multiple: true})).then(res => {
+            let value = res.map(it => it.path).join(';');
+            onInput('value', index)(value);
+        }).catch(errorMessage(messageApi)).finally(() => {
+            setSelectLoading(false);
+        });
+    };
     return <>
+        {messageContextHolder}
+        <Spin spinning={selectLoading}>
         {
             props.value?.map((it, index) => {
                 return <Row className="runtime_item_input_wrapper" gutter={8} key={`runtime_item_input_wrapper_${index}`}>
@@ -59,14 +74,16 @@ function AppRuntimeItemInput(props: AppRuntimeItemInputProps) {
                                autoComplete={"off"}/>
                     </Col>
                     <Col span={16}>
-                        <Input placeholder={"输入环境变量值"} autoComplete={"off"}  defaultValue={it.value}
+                        <Input placeholder={"输入环境变量值"} autoComplete={"off"}
+                                                                       value={it.value}
                                onInput={e => onInput("value", index)(e.currentTarget.value)}
-                               addonAfter={<DeleteOutlined onClick={() => onDelItem(index)}/>}/>
+                                     addonAfter={<><FileOutlined onClick={() => onSelectDirPath(index)} />&nbsp;&nbsp;<DeleteOutlined onClick={() => onDelItem(index)}/></>}/>
                     </Col>
                 </Row>
             })
         }
-        <Button icon={<PlusSquareOutlined />} block type={"dashed"} onClick={() => onAddNewItem()}>新增环境变量</Button>
+        </Spin>
+        <Button loading={selectLoading} icon={<PlusSquareOutlined />} block type={"dashed"} onClick={() => onAddNewItem()}>新增环境变量</Button>
     </>
 }
 

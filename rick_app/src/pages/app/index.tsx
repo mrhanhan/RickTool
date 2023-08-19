@@ -68,6 +68,12 @@ function AppGroupForm(props: { form: FormInstance, name?: string }) {
     </Form>
 }
 
+function AppForm() {
+
+    return <Form>
+    </Form>;
+}
+
 export default function AppPage() {
     const [appGroupData, setAppGroupData] = useState([] as AppGroup[]);
     const [messageApi, messageContextHolder] = message.useMessage();

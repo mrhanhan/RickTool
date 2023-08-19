@@ -1,5 +1,5 @@
 use rick_core::error::AppError;
-use rick_core::sqlite::{QueryDatabaseOperate, SqlWrapper, UpdateDatabaseOperate};
+use rick_core::sqlite::{QueryDatabaseOperate, SqlWrapper, Table, UpdateDatabaseOperate};
 use crate::app::service::ServiceRegister;
 use crate::global::RickResult;
 use crate::service::{common_result, convert_result};

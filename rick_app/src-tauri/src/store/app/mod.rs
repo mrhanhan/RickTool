@@ -45,3 +45,90 @@ pub struct AppRuntime {
     #[column(exclude = true)]
     pub items: Option<Vec<AppRuntimeItem>>
 }
+
+/// 需要运行的App 信息
+#[derive(Serialize, Deserialize, ITable, Debug, Default)]
+#[table(table = "v_app", conn = "crate::modules::app_db")]
+pub struct App {
+    /// ID
+    #[column(id = true)]
+    pub id: i32,
+    /// 应用程序 名称
+    pub name: String,
+    /// 应用程序类型 100 可执行程序 200 JAVA程序 201 Python 程序 202 NodeJs 300 网页
+    #[column(column = "type")]
+    pub target_type: i32,
+    /// 程序目录
+    pub target: String,
+    /// Logo 路径
+    pub logo_path: String,
+    /// 备注
+    pub remark: String,
+    /// 创建事件
+    pub create_time: i32
+}
+
+/// 应用程序扩展信息
+#[derive(Serialize, Deserialize, ITable, Debug, Default)]
+#[table(table = "v_app_ext", conn = "crate::modules::app_db")]
+pub struct AppExt {
+    /// ID
+    #[column(id = true)]
+    pub id: i32,
+    /// APP ID
+    pub app_id: i32,
+    /// 启动方式ID
+    pub start_id: i32,
+    /// 类型
+    #[column(column = "type")]
+    pub ty: String,
+    /// code
+    pub code: String,
+    /// 配置值
+    pub value: String
+}
+
+/// APP 启动方式
+#[derive(Serialize, Deserialize, ITable, Debug, Default)]
+#[table(table = "v_app_start", conn = "crate::modules::app_db")]
+pub struct AppStart {
+    /// ID
+    #[column(id = true)]
+    pub id: i32,
+    /// APP ID
+    pub app_id: i32,
+    /// 方式名称
+    pub name: String,
+    /// 备注
+    pub remark: String
+}
+
+
+#[derive(Serialize, Deserialize, ITable, Debug, Default)]
+#[table(table = "v_app_start_args", conn = "crate::modules::app_db")]
+pub struct AppStartArgs {
+    /// ID
+    #[column(id = true)]
+    pub id: i32,
+    /// APP ID
+    pub app_id: i32,
+    /// 启动方式ID
+    pub start_id: i32,
+    /// 分组 ID
+    pub group_id: i32,
+    /// 类型
+    #[column(column = "type")]
+    pub ty: i32,
+    /// 方式名称
+    pub name: String,
+    /// 默认值
+    pub default_value: String,
+    /// 配置
+    pub config: String,
+    /// 参数是否支持添加多个
+    pub multiple: i32,
+    /// 是否可选 0 必选 1  可选
+    pub optional: i32,
+    /// 备注
+    pub remark: String
+}

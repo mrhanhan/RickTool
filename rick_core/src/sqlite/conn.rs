@@ -19,7 +19,15 @@ impl Connection {
     pub fn execute<T: AsRef<str>>(&self, statement: T) -> Result<(), SqlError> {
         self.0.execute(statement)
     }
-
+    pub fn begin_transaction(&self) -> Result<(), SqlError>{
+        self.0.execute("begin transaction;").into()
+    }
+    pub fn commit(&self) -> Result<(), SqlError>{
+        self.0.execute("commit;").into()
+    }
+    pub fn rollback(&self) -> Result<(), SqlError> {
+        self.0.execute("rollback;").into()
+    }
     pub fn change_count(&self) -> usize {
         self.0.change_count()
     }

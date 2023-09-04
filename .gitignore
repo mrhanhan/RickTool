@@ -3,3 +3,4 @@
 /**/.vscode
 /**/dist
 /**/.fleet
+/**/node_modules

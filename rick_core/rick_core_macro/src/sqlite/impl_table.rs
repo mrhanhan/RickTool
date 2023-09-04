@@ -57,12 +57,18 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
             });
         }
         if _column_info.exclude {
-            let ty = process_generic(quote!{#ty});
-            // let ty = process_generic(quote!{Option::<i32>::default()});
-            // 处理泛型
-            from_fields.extend(quote!{
-                #f: #ty::default()
-            });
+            if let Some(ref _default) = _column_info.default {
+                let val = quote!{#_default};
+                from_fields.extend(quote!{
+                    #f: #val,
+                });
+            } else {
+                let ty = process_generic(quote!{#ty});
+                // 处理泛型
+                from_fields.extend(quote!{
+                    #f: #ty::default()
+                });
+            }
         } else {
             from_fields.extend(quote!{
                 #f: rick_core::sqlite::To::<#ty>::to(&(row.read::<rick_core::sqlite::SqlValue, _>(#column)))

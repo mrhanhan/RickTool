@@ -1,4 +1,3 @@
-use crate::sqlite::SqlError;
 
 /// 异常数据
 pub trait RickError {

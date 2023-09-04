@@ -317,12 +317,12 @@ impl SqlWrapper {
         self
     }
     /// 拼接Sql
-    pub fn append<F: AsRef<str>>(&mut self, sql: F) -> &mut Self {
+    pub fn append<S: AsRef<str>>(&mut self, sql: S) -> &mut Self {
         self.append_sql.push(SqlAppend { sql: String::from(sql.as_ref()), args: Vec::new() });
         self
     }
     /// 拼接Sql
-    pub fn append_args<F: AsRef<str>>(&mut self, sql: F, args: Vec<SqlValue>) -> &mut Self {
+    pub fn append_args<S: AsRef<str>>(&mut self, sql: S, args: Vec<SqlValue>) -> &mut Self {
         self.append_sql.push(SqlAppend { sql: String::from(sql.as_ref()), args });
         self
     }

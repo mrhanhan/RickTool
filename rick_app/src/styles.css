@@ -4,7 +4,7 @@ html,body {
 }
 html,
 body,
-#root,
+#root,.ant-app,
 .main-layout,
 .main-layout_sider {
     width: 100%;

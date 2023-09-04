@@ -40,19 +40,17 @@ impl<'a> TaskQueue {
         // 读取任务
         let mut task_count = 0;
         {
-            let task = self.0.read().unwrap();
+            let mut task = self.0.write().unwrap();
             task_count = task.len();
-            // 释放锁
+            // 判断是否有值
+            if task_count > 0 {
+                let task = task.remove(0);
+                return Some(task);
+            }
         }
         if task_count == 0 {
             // 睡眠
             self.1.wait_timeout(timeout);
-        }
-        // 判断是否有值
-        if task_count > 0 {
-            let mut queue = self.0.write().unwrap();
-            let task = queue.remove(0);
-            return Some(task);
         }
         None
     }

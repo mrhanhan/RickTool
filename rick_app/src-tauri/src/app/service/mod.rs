@@ -7,6 +7,7 @@ use std::sync::{Arc, RwLock};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use rick_core::error::{AppError, RickError};
+use rick_core::utils::thread_callback::{call_callback, ThreadExecuteStatus};
 pub use crate::app::service::invoke::ServiceInvoke;
 use crate::context::get_application;
 use crate::global::RickInvoke;
@@ -233,7 +234,7 @@ impl ServiceRegister {
                 }
             }
         }
-        invoke.reject(ServiceResult::<i32>::fail_code(404));
+        invoke.reject(ServiceResult::<i32>::create(404, None, "服务不存在"));
         Ok(())
     }
 
@@ -251,15 +252,22 @@ impl ServiceRegister {
             println!("{:#?}", service_invoke.data());
             let result = catch_unwind(move || {
                 let _service = unsafe {&*(_service_ptr as *const ServiceInvoke)};
-                _self.sink_call(msg, _service.clone()).unwrap()
+                let _result = _self.sink_call(msg, _service.clone());
+                _result
             });
-
+            // 判断是否是异常
             match result {
-                Ok(_) => {
+                Ok(Ok(_)) => {
                     service_invoke.send_resolver(resolver);
-                }
-                Err(_err) => {
+                    call_callback(ThreadExecuteStatus::Ok);
+                },
+                Ok(Err(_err)) => {
+                    resolver.reject(ServiceResult::<i32>::create(_err.code(), None, _err.message().as_str()));
+                    call_callback(ThreadExecuteStatus::Ok);
+                },
+                _ => {
                     resolver.reject(ServiceResult::<i32>::fail_code(500));
+                    call_callback(ThreadExecuteStatus::Panic);
                 }
             }
         })).expect("");

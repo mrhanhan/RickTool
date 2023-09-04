@@ -49,7 +49,7 @@ export interface FileOpenResult {
 }
 
 export async function fileReadDialogOpen(options: FileOpen = {}) {
-    options = {need_content: true, multiple: false, ...options};
+    options = {need_content: false, multiple: false, ...options};
     return call<Result<FileOpenResult[]>>('/common/file/read/open', options);
 }
 
@@ -62,3 +62,12 @@ export async function dirDialogOpen(options: FileOpen = {}) {
     options = {need_content: false, multiple: false, ...options};
     return call<Result<FileOpenResult[]>>('/common/dir/open', options);
 }
+
+export async function logoRead(params: {path: string}) {
+    return call<Result<number[]>>('/common/logo/read', params);
+}
+
+export async function fileRead(params: {path: string}) {
+    return call<Result<number[]>>('/common/file/read', params);
+}
+

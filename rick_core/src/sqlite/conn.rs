@@ -1,4 +1,6 @@
+use std::sync::Arc;
 use sqlite::Statement;
+use crate::utils::thread_callback::{add_callback, ThreadExecuteStatus};
 
 pub type SqlError = sqlite::Error;
 
@@ -32,5 +34,25 @@ impl Connection {
         self.0.change_count()
     }
     
+}
+
+pub trait ConnectionContext {
+
+    fn register_callback(&self);
+}
+impl ConnectionContext for Arc<Connection> {
+    fn register_callback(&self) {
+        let conn = self.clone();
+        add_callback(Box::new(move |_status: &ThreadExecuteStatus|{
+            match _status {
+                ThreadExecuteStatus::Ok => {
+                    conn.commit();
+                }
+                ThreadExecuteStatus::Panic => {
+                    conn.rollback();
+                }
+            }
+        }));
+    }
 }
 

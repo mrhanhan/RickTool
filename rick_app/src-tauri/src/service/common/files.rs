@@ -1,9 +1,14 @@
 use std::{fs, vec};
+use std::fs::File;
 use std::sync::Arc;
+use image::math;
 
 use serde::{Deserialize, Serialize};
 use tauri::api::dialog::FileDialogBuilder;
+use rick_core::error::AppError;
 use crate::app::service::{ClosureFnService, ServiceInvoke, ServiceRegister, ServiceResult};
+use crate::global::RickResult;
+use crate::service::app::get_logo_dir;
 use crate::utils::ThreadSignal;
 
 /// 服务注册
@@ -11,6 +16,8 @@ pub fn init_service(_register: &ServiceRegister) {
     _register.register("/common/file/read/open".into(), ClosureFnService::new(file_read_open));
     _register.register("/common/file/save/open".into(), ClosureFnService::new(file_save_open));
     _register.register("/common/dir/open".into(), ClosureFnService::new(dir_open));
+    _register.register_closure_fn("/common/logo/raed", logo_read);
+    _register.register_closure_fn("/common/file/read", file_read);
 }
 
 /// 文件过滤
@@ -50,10 +57,44 @@ pub struct FileOpenResult {
     fail_reason: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FileRead {
+    path: String
+}
+
+/// 读取Logo 数据
+fn logo_read(read: FileRead) -> RickResult<Vec<u8>> {
+    let mut logo_dir = get_logo_dir();
+    logo_dir.push(read.path);
+    match fs::read(logo_dir) {
+        Ok(_data) => Ok(_data),
+        Err(ref _err) => {
+            Err(AppError::new(500, _err.to_string()))
+        }
+    }
+}
+
+/// 读取Logo 数据
+fn file_read(read: FileRead) -> RickResult<Vec<u8>> {
+
+    match fs::read(read.path) {
+        Ok(_data) => {
+            println!("文件读取成功:{:#?}", _data.len());
+            Ok(_data)
+        },
+        Err(ref _err) => {
+            println!("文件读取失败:{:#?}", _err);
+            Err(AppError::new(500, _err.to_string()))
+        }
+    }
+}
+
+
 fn file_save_open(service: ServiceInvoke) {
     common_file_dialog(service, |builder, service, file_open, notify| {
         builder.save_file(move |file| {
             if let None = file {
+                println!("没选择文件");
                 service.reject(ServiceResult::<i32>::fail_reason("请选择文件"));
                 notify.notify_all();
                 return;
@@ -75,6 +116,7 @@ fn file_read_open(service: ServiceInvoke) {
         if file_open.multiple {
             builder.pick_files(move |files| {
                 if let None = files {
+                    println!("没选择文件");
                     service.reject(ServiceResult::<i32>::fail_reason("请选择文件"));
                     notify.notify_all();
                     return;
@@ -91,7 +133,9 @@ fn file_read_open(service: ServiceInvoke) {
         } else {
             builder.pick_file(move |file| {
                 if let None = file {
+                    println!("没选择文件");
                     service.reject(ServiceResult::<i32>::fail_reason("请选择文件"));
+                    notify.notify_all();
                     return;
                 }
                 let _file_path: String = file.unwrap().to_str().unwrap().into();
@@ -109,6 +153,7 @@ fn dir_open(service: ServiceInvoke) {
         if file_open.multiple {
             builder.pick_folders(move |files| {
                 if let None = files {
+                    println!("没选择目录");
                     service.reject(ServiceResult::<i32>::fail_reason("请选择文件目录"));
                     notify.notify_all();
                     return;

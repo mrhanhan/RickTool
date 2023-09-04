@@ -53,6 +53,8 @@ pub struct App {
     /// ID
     #[column(id = true)]
     pub id: i32,
+    /// 分组ID 默认为 0
+    pub group_id: i32,
     /// 应用程序 名称
     pub name: String,
     /// 应用程序类型 100 可执行程序 200 JAVA程序 201 Python 程序 202 NodeJs 300 网页
@@ -65,7 +67,16 @@ pub struct App {
     /// 备注
     pub remark: String,
     /// 创建事件
-    pub create_time: i32
+    pub create_time: i32,
+    /// 额外的字段
+    #[column(exclude = true)]
+    pub logo: Option<Vec<u8>>,
+    /// 额外的字段
+    #[column(exclude = true)]
+    pub ext_vec: Option<Vec<AppExt>>,
+    /// 额外的字段
+    #[column(exclude = true)]
+    pub start_vec: Option<Vec<AppStart>>
 }
 
 /// 应用程序扩展信息
@@ -100,7 +111,13 @@ pub struct AppStart {
     /// 方式名称
     pub name: String,
     /// 备注
-    pub remark: String
+    pub remark: String,
+    /// 参数
+    #[column(exclude = true)]
+    pub args: Option<Vec<AppStartArgs>>,
+    /// 额外的字段
+    #[column(exclude = true)]
+    pub ext_vec: Option<Vec<AppExt>>
 }
 
 
@@ -116,7 +133,7 @@ pub struct AppStartArgs {
     pub start_id: i32,
     /// 分组 ID
     pub group_id: i32,
-    /// 类型
+    /// 类型 1 固定参数类型 2 文件参数类型 3 输入参数类型 4 多选参数类型
     #[column(column = "type")]
     pub ty: i32,
     /// 方式名称

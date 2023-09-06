@@ -6,12 +6,13 @@ use rick_core::sqlite::*;
 use crate::app::service::ServiceRegister;
 use crate::context::get_application;
 use crate::global::RickResult;
-use crate::seq::increase_table;
-use crate::store::app::{App, AppExt};
+use crate::seq::{increase_table_conn};
+use crate::store::app::{App, AppExt, AppStart, AppStartArgs};
 
 /// ============================================ [ init ] ===========================================
 pub fn init_service(_register: &ServiceRegister) {
     _register.register_closure_fn("/app/list", list_app);
+    _register.register_closure_fn("/app/save", save_app);
 }
 
 /// ============================================ [ model ] ===========================================
@@ -53,14 +54,20 @@ fn list_app(params: AppListParams) -> RickResult<Vec<App>> {
 /// 保存应用程序
 fn save_app(mut app: App) -> RickResult<App> {
     let conn = Arc::new(App::conn());
+    conn.register_callback();
     if let Err(ref _err) = conn.begin_transaction() {
         return Err(_err.into());
     }
     // 注册事件提交
-    conn.register_callback();
-    app.id = increase_table::<App>();
+    app.id = increase_table_conn::<App>(&conn);
     // 保存app 扩展信息
     let _ = save_app_ext(app.id, 0, app.ext_vec.take(), &conn)?;
+    // 保存start 信息
+    let _ = save_app_start(app.id, app.start_vec.take(), &conn)?;
+    if let Err(ref _err) = App::save_with_conn(&app, &conn) {
+        return Err(_err.into())
+    }
+    // 保存app 信息
     Ok(app)
 }
 
@@ -70,12 +77,53 @@ fn save_app(mut app: App) -> RickResult<App> {
 
 fn save_app_ext(app_id: i32, start_id: i32, ext_vec: Option<Vec<AppExt>>, conn: &Connection) -> RickResult<()> {
     if let Some(mut _ext_vec) = ext_vec {
+        if _ext_vec.is_empty() {
+            return Ok(())
+        }
         for _ext in _ext_vec.as_mut_slice() {
-            _ext.id = increase_table::<AppExt>();
+            _ext.id = increase_table_conn::<AppExt>(conn);
             _ext.app_id = app_id;
             _ext.start_id = start_id;
         }
         return match AppExt::save_batch_vec_with_conn(_ext_vec, conn) {
+            Ok(_) => Ok(()),
+            Err(ref _err) => Err(_err.into()),
+        };
+    }
+    Ok(())
+}
+
+fn save_app_args(app_id: i32, start_id: i32, args_vec: Option<Vec<AppStartArgs>>, conn: &Connection) -> RickResult<()> {
+    if let Some(mut _args_vec) = args_vec {
+        if _args_vec.is_empty() {
+            return Ok(())
+        }
+        // 保存Args
+        for _arg in _args_vec.as_mut_slice() {
+            _arg.id = increase_table_conn::<AppStartArgs>(conn);
+            _arg.app_id = app_id;
+            _arg.start_id = start_id;
+        }
+        return match AppStartArgs::save_batch_vec_with_conn(_args_vec, conn) {
+            Ok(_) => Ok(()),
+            Err(ref _err) => Err(_err.into()),
+        };
+    }
+    Ok(())
+}
+fn save_app_start(app_id: i32, app_start_vec: Option<Vec<AppStart>>, conn: &Connection) -> RickResult<()> {
+    if let Some(mut _app_start_vec) = app_start_vec {
+        if _app_start_vec.is_empty() {
+            return Ok(())
+        }
+        // 保存Args
+        for _start in _app_start_vec.as_mut_slice() {
+            _start.id = increase_table_conn::<AppStart>(conn);
+            _start.app_id = app_id;
+            let _ = save_app_ext(app_id, _start.id, _start.ext_vec.take(), conn)?;
+            let _ = save_app_args(app_id, _start.id, _start.args.take(), conn)?;
+        }
+        return match AppStart::save_batch_vec_with_conn(_app_start_vec, conn) {
             Ok(_) => Ok(()),
             Err(ref _err) => Err(_err.into()),
         };

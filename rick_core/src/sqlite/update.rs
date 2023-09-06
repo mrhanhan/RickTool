@@ -114,7 +114,7 @@ pub trait UpdateDatabaseOperate {
     }
     fn delete_with_conn(wrapper: &SqlWrapper, conn: &Connection) -> Result<usize, SqlError> {
         let sql = format!("delete from {}", Self::Model::table_name());
-        match wrapper.process(sql, &Self::Model::conn()) {
+        match wrapper.process(sql, conn) {
             Ok((_statement, conn)) => {
                 done(_statement, conn)
             }

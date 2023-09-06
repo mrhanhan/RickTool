@@ -22,13 +22,13 @@ impl Connection {
         self.0.execute(statement)
     }
     pub fn begin_transaction(&self) -> Result<(), SqlError>{
-        self.0.execute("begin transaction;").into()
+        self.0.execute("BEGIN TRANSACTION").into()
     }
     pub fn commit(&self) -> Result<(), SqlError>{
-        self.0.execute("commit;").into()
+        self.0.execute("COMMIT").into()
     }
     pub fn rollback(&self) -> Result<(), SqlError> {
-        self.0.execute("rollback;").into()
+        self.0.execute("ROLLBACK").into()
     }
     pub fn change_count(&self) -> usize {
         self.0.change_count()

@@ -1,11 +1,29 @@
-import {Button, Card, Col, Form, FormInstance, Input, List, App as AntApp, Modal, Row} from "antd";
+import {
+    Button,
+    Card,
+    Col,
+    Form,
+    FormInstance,
+    Input,
+    List,
+    App as AntApp,
+    Modal,
+    Row,
+    Image,
+    Avatar,
+    Divider
+} from "antd";
 import './app.less';
 import {useEffect, useState} from "react";
-import {AppGroup} from "./app-model";
-import {delAppGroup, listAppGroup, saveAppGroup, updateAppGroup} from "./app-request";
-import {commonProcess, errorMessage} from "../../model";
+import {App, AppGroup} from "./app-model";
+import {delAppGroup, listApp, listAppGroup, saveApp, saveAppGroup, updateAppGroup} from "./app-request";
+import {commonProcess, errorMessage, getErrorMessage} from "../../model";
 import {DeleteOutlined, EditOutlined} from "@ant-design/icons";
 import {AppForm} from "./app-form";
+import {numberToBase64Img, processForm} from "./data";
+import {DEFAULT_LOGO_URL} from "../../component/logo-input";
+import ContextMenu from "../../component/context-menu";
+import ContextMenuItem from "../../component/context-menu/context-menu-item";
 
 
 interface AppGroupListProps {
@@ -119,56 +137,82 @@ function AppGroupList(props: AppGroupListProps) {
     useEffect(() => {
         loadAppGroup();
     }, []);
-    return <Card title={"分组"} extra={extraGroupNode}><List bordered loading={loading} dataSource={appGroupData}
-                                                             size={"small"}
-                                                             renderItem={(value, index) => {
-                                                                 return <List.Item
-                                                                     onClick={() => setSelectedIndex(index)}
-                                                                     onMouseEnter={() => setHoverIndex(index)}
-                                                                     onMouseLeave={() => setHoverIndex(-1)}
-                                                                     actions={(index === selectedIndex || index === hoverIndex) &&
-                                                                     index != 0 ? [<DeleteOutlined
-                                                                         onClick={() => openDeleteAppGroup(value.id)}/>,
-                                                                         <EditOutlined
-                                                                             onClick={() => openEditAppGroupForm(value.id, value.name)}/>] : []}
-                                                                     className={`rick-can-selected ${index === selectedIndex && 'rick-selected'}`}>
-                                                                     <span>{value.name}</span>
-                                                                 </List.Item>;
-                                                             }}/></Card>
+    return <Card title={"分组"} extra={extraGroupNode}>
+        <List bordered loading={loading} dataSource={appGroupData}
+              size={"small"}
+              renderItem={(value, index) => {
+                  return <List.Item
+                      onClick={() => {
+                          setSelectedIndex(index);
+                          props.onSelected?.(value);
+                      }}
+                      onMouseEnter={() => setHoverIndex(index)}
+                      onMouseLeave={() => setHoverIndex(-1)}
+                      actions={(index === selectedIndex || index === hoverIndex) &&
+                      index != 0 ? [<DeleteOutlined
+                          onClick={() => openDeleteAppGroup(value.id)}/>,
+                          <EditOutlined
+                              onClick={() => openEditAppGroupForm(value.id, value.name)}/>] : []}
+                      className={`rick-can-selected ${index === selectedIndex && 'rick-selected'}`}>
+                      <span>{value.name}</span>
+                  </List.Item>;
+              }}/></Card>
 }
 
-function AppList() {
-    const data = [
-        {
-            title: 'Title 1',
-        },
-        {
-            title: 'Title 2',
-        },
-        {
-            title: 'Title 3',
-        },
-        {
-            title: 'Title 4',
-        },
-    ];
-    return <List dataSource={data}
-                 grid={{gutter: 8, column: 4}}
-                 renderItem={(item) => (
-                     <List.Item>
-                         <div>
-                             {item.title}
-                         </div>
-                     </List.Item>
-                 )}
-    />;
+declare interface AppListProps {
+    dataSource: App[],
+    onEdit: (app: App) => void
+    onDel: (app: App) => void
+    onRun: (app: App) => void
+    onRunAs: (app: App) => void
+}
+
+function AppList(props: AppListProps) {
+
+    const contextMenuRender = (app: App) => <div className={"app-context-menu-layout"}>
+        <List size={"small"}>
+            <List.Item onClick={() => props.onRun(app)}>运行</List.Item>
+            <List.Item onClick={() => props.onRun(app)}>管理员运行</List.Item>
+            <List.Item onClick={() => props.onRun(app)}>编辑</List.Item>
+            <List.Item onClick={() => props.onRun(app)}>删除</List.Item>
+        </List>
+    </div>;
+
+    return <ContextMenu onRender={contextMenuRender}>
+        <List dataSource={props.dataSource}
+              rowKey={"id"}
+              grid={{gutter: 8, column: 12}}
+              renderItem={(item) => (
+                  <List.Item>
+                      <ContextMenuItem bind={item}>
+                          <div style={{textAlign: 'center'}}>
+                              <Avatar src={item.logo?.length ? numberToBase64Img(item.logo!) : DEFAULT_LOGO_URL}
+                                      size={48}/>
+                              <br/>
+                              <div>{item.name}</div>
+                          </div>
+                      </ContextMenuItem>
+                  </List.Item>
+              )}
+        /></ContextMenu>;
 }
 
 export default function AppPage() {
     const {message, modal} = AntApp.useApp();
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-    const [groupId, setGroupId] = useState(0);
+    const [dataSource, setDataSource] = useState([] as App[]);
+    const onLoad = (groupId: number) => {
+        setLoading(true);
+        commonProcess(listApp({group_id: groupId})).then((data) => {
+            setDataSource(data);
+            console.log(data);
+            setLoading(false);
+        }).catch(reason => {
+            message.error('获取应用失败:' + getErrorMessage(reason)).then();
+            setLoading(false);
+        });
+    }
     const openCreateAppForm = () => {
         const instance = modal.confirm({
             title: '新增App',
@@ -176,25 +220,28 @@ export default function AppPage() {
             width: '80%',
             content: <AppForm form={form}/>,
             onOk: () => {
-                const name = form.getFieldValue('name');
                 setLoading(true);
-                saveAppGroup(name)
-                    .then(() => {
-                        form.resetFields();
-                        message.success('保存成功').then();
-                    })
-                    .catch((reason) => {
-                        form.resetFields();
-                        errorMessage(message)(reason);
-                        setLoading(false);
-                    });
-                instance.destroy();
+                let model = processForm(form.getFieldsValue());
+                commonProcess(saveApp(model)).then(app => {
+                    message.success("保存App成功").then();
+                    setLoading(false);
+                    onLoad(0);
+                    instance.destroy();
+                }).catch(reason => {
+                    message.error('保存失败:' + getErrorMessage(reason)).then();
+                    setLoading(false);
+                });
             },
             onCancel: () => {
                 instance.destroy();
             }
         });
     };
+
+
+    useEffect(() => {
+        onLoad(0);
+    }, []);
 
     const extraNode = <>
         <Button.Group>
@@ -205,11 +252,16 @@ export default function AppPage() {
     return <div className={"app_page"}>
         <Row gutter={8}>
             <Col className="group">
-                <AppGroupList onSelected={({id}) => setGroupId(id)}/>
+                <AppGroupList onSelected={({id}) => onLoad(id)}/>
             </Col>
             <Col flex={1}>
                 <Card title={"App"} extra={extraNode} loading={loading}>
-                    <AppList/>
+                    <AppList dataSource={dataSource}
+                             onEdit={app => {}}
+                             onRun={app => {}}
+                             onRunAs={app => {}}
+                             onDel={app => {}}
+                    />
                 </Card>
             </Col>
         </Row>

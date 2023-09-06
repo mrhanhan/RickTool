@@ -18,6 +18,7 @@ export enum ArgType {
 }
 
 export interface ArgInputValue {
+    id: number
     /**
      * 参数类型
      */

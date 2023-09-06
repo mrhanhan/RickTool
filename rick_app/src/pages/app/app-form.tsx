@@ -37,7 +37,7 @@ export function AppForm(props: AppFormProps) {
         loadGroup();
     }, []);
     return <div>
-        <Form form={props.form} initialValues={{group_id: 0, target_type: 100, ...props.model}}>
+        <Form form={props.form} initialValues={{group_id: 0, target_type: 100, ...props.model}} autoComplete={"off"}>
             <Row gutter={16}>
                 <Col xs={24} sm={24} md={12} className={"app_page-form_border"}>
                     <Divider dashed orientation={"left"}>基础信息</Divider>
@@ -63,7 +63,7 @@ export function AppForm(props: AppFormProps) {
                             </Form.Item>
                         </Col>
                     </Row>
-                    <Form.Item label={"备注"} name={"remark"} required>
+                    <Form.Item label={"备注"} name={"remark"}>
                         <Input.TextArea placeholder="请输入APP备注"/>
                     </Form.Item>
                 </Col>
@@ -80,7 +80,7 @@ export function AppForm(props: AppFormProps) {
                 <Divider dashed orientation={"left"}>参数配置</Divider>
                 <Row>
                     <Col span={24}>
-                        <Form.Item label={"启动方案"} required>
+                        <Form.Item label={"启动方案"} name={"start_vec"}>
                             <AppStart/>
                         </Form.Item>
                     </Col>

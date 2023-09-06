@@ -160,11 +160,12 @@ export default function AppRuntimePage() {
                     const result = await form.validateFields();
                     console.log('Result:', result);
                     setLoading(true);
-                   saveAppRuntime(result)
+                    saveAppRuntime(result)
                        .then(() => {
                            form.resetFields();
                            loadAppRuntimeList();
                            messageApi.success('保存成功').then();
+                           setLoading(false);
                        })
                        .catch((reason) => {
                            form.resetFields();

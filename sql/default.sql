@@ -61,7 +61,7 @@ create table if not exists v_app_start_args
 (
     id            int primary key,         -- id
     app_id        int  not null,           -- app id
-    statr_id      int  not null,           -- 启动ID
+    start_id      int  not null,           -- 启动ID
     group_id      int  not null,           -- 参数是否分组 0 不分组, 1分组
     type          int  not null default 1, -- 参数类型 1 固定参数 2 文件参数 3 枚举
     name          text not null,           -- 参数名称

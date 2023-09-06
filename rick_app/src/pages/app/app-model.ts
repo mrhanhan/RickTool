@@ -39,7 +39,6 @@ export interface AppArgs {
     multiple: number;
     optional: number;
     remark: string;
-
 }
 
 export interface AppExt {

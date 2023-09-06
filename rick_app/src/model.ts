@@ -17,6 +17,16 @@ export async function commonProcess<T>(data: Promise<Result<T>>): Promise<T> {
     });
 }
 
+export function getErrorMessage(reason: any): string {
+    if (!reason) {
+        return '操作失败';
+    }
+    if (typeof reason === 'string') {
+        return reason
+    } else {
+        return reason.message;
+    }
+}
 export function errorMessage(api: MessageInstance) {
     return (reason?: string|Result<any>) => {
         if (!reason) {

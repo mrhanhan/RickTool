@@ -1,12 +1,10 @@
 @import "../../vars";
 
 .arg-input {
-  //padding: 8px;
   border: 1px dashed @border-color;
-  //margin-bottom: 4px;
-  //height: 24px;
-  //background-color: darkred;
-
+  &:has(.arg-input_config_collapse) {
+    height: 24px;
+  }
   .arg-input_item {
     margin-right: 2px;
 
@@ -14,5 +12,17 @@
       border-style: solid;
       background-color: red;
     }
+  }
+  .arg-input_config {
+    width: 100%;
+    overflow: hidden;
+    height: max-content;
+    transition: height 200ms;
+  }
+  .arg-input_config_expand {
+    height: max-content;
+  }
+  .arg-input_config_collapse {
+    height: 0;
   }
 }

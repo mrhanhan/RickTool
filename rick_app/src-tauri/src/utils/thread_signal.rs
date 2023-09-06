@@ -1,11 +1,12 @@
-use std::{sync::{Condvar, Mutex, Arc}, time::Duration};
-
+use std::{
+    sync::{Arc, Condvar, Mutex},
+    time::Duration,
+};
 
 pub(crate) struct ThreadSignal(Condvar, Mutex<bool>);
 
 #[allow(unused)]
 impl ThreadSignal {
-
     pub(crate) fn new_arc() -> Arc<ThreadSignal> {
         Arc::new(ThreadSignal::new())
     }
@@ -30,7 +31,7 @@ impl ThreadSignal {
                 if *f.0 {
                     *f.0 = false;
                 }
-            },
+            }
             Err(_) => {
                 let mut f = self.1.lock().unwrap();
                 if *f {
@@ -51,5 +52,4 @@ impl ThreadSignal {
         *self.1.lock().unwrap() = true;
         self.0.notify_all();
     }
-
 }

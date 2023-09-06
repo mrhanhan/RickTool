@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use rick_core_macro::ITable;
 use rick_core::sqlite::*;
+use rick_core_macro::ITable;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, ITable, Debug)]
 #[table(table = "v_app_group", conn = "crate::modules::app_db")]
@@ -11,9 +11,8 @@ pub struct AppGroup {
     // 分组名称
     pub name: String,
     // icon
-    pub icon: String
+    pub icon: String,
 }
-
 
 #[derive(Serialize, Deserialize, ITable, Debug, Default)]
 #[table(table = "v_app_runtime_item", conn = "crate::modules::app_db")]
@@ -26,7 +25,7 @@ pub struct AppRuntimeItem {
     /// 环境Key
     pub code: String,
     /// 环境变量值
-    pub value: String
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, ITable, Debug, Default)]
@@ -43,7 +42,7 @@ pub struct AppRuntime {
     pub include_system: i32,
     /// 默认Items 数据
     #[column(exclude = true)]
-    pub items: Option<Vec<AppRuntimeItem>>
+    pub items: Option<Vec<AppRuntimeItem>>,
 }
 
 /// 需要运行的App 信息
@@ -76,7 +75,7 @@ pub struct App {
     pub ext_vec: Option<Vec<AppExt>>,
     /// 额外的字段
     #[column(exclude = true)]
-    pub start_vec: Option<Vec<AppStart>>
+    pub start_vec: Option<Vec<AppStart>>,
 }
 
 /// 应用程序扩展信息
@@ -96,7 +95,7 @@ pub struct AppExt {
     /// code
     pub code: String,
     /// 配置值
-    pub value: String
+    pub value: String,
 }
 
 /// APP 启动方式
@@ -117,9 +116,8 @@ pub struct AppStart {
     pub args: Option<Vec<AppStartArgs>>,
     /// 额外的字段
     #[column(exclude = true)]
-    pub ext_vec: Option<Vec<AppExt>>
+    pub ext_vec: Option<Vec<AppExt>>,
 }
-
 
 #[derive(Serialize, Deserialize, ITable, Debug, Default)]
 #[table(table = "v_app_start_args", conn = "crate::modules::app_db")]
@@ -147,5 +145,5 @@ pub struct AppStartArgs {
     /// 是否可选 0 必选 1  可选
     pub optional: i32,
     /// 备注
-    pub remark: String
+    pub remark: String,
 }

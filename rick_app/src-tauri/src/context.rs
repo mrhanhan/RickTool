@@ -1,10 +1,9 @@
-use crate::{global_val, global_val_set};
 use crate::app::application::Application;
 use crate::global::RickApp;
 use crate::modules::init_modules;
 use crate::service::init_service;
 use crate::utils::GlobalVal;
-
+use crate::{global_val, global_val_set};
 
 global_val!(GLOBAL_APPLICATION, Application);
 

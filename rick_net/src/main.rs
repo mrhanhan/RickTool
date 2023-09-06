@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 fn main() {
     //Must be run as Administrator because we create network adapters
-//Load the wintun dll file so that we can call the underlying C functions
-//Unsafe because we are loading an arbitrary dll file
-    let wintun = unsafe { wintun::load_from_path(r"E:\Rick\RickTools\rick_net\lib\wintun\bin\amd64\wintun.dll") }
-        .expect("Failed to load wintun dll");
+    //Load the wintun dll file so that we can call the underlying C functions
+    //Unsafe because we are loading an arbitrary dll file
+    let wintun = unsafe {
+        wintun::load_from_path(r"E:\Rick\RickTools\rick_net\lib\wintun\bin\amd64\wintun.dll")
+    }
+    .expect("Failed to load wintun dll");
 
     let _a = match wintun::Adapter::open(&wintun, "Demo") {
         Ok(a) => a,

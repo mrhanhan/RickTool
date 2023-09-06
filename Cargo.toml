@@ -7,4 +7,3 @@ members = [
     "rick_loader",
     "rick_core/rick_core_macro"
 ]
-

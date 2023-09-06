@@ -1,5 +1,5 @@
+use rick_core::error::AppError;
 use tauri::{App, AppHandle, Invoke, InvokeMessage, InvokeResolver, Window, Wry};
-use rick_core::error::{AppError};
 
 pub type RickApp = App<Wry>;
 pub type RickRuntime = Wry;

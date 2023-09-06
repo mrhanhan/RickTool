@@ -8,12 +8,13 @@ pub mod tests {
         data: i32,
     }
 
-
     static mut g: Option<Global> = None;
 
     #[test]
     pub fn test_sync() {
-        unsafe {g = Some(Global { data: 0 });}
+        unsafe {
+            g = Some(Global { data: 0 });
+        }
         std::thread::spawn(|| unsafe {
             for _ in 0..100000 {
                 let x = g.as_mut().unwrap();
@@ -39,7 +40,9 @@ pub mod tests {
                 let x = g.as_mut().unwrap();
                 x.data = x.data + 1;
             }
-        }).join().expect("panic message");
+        })
+        .join()
+        .expect("panic message");
         std::thread::sleep(Duration::from_millis(1000));
         unsafe {
             println!("{:?}", g);

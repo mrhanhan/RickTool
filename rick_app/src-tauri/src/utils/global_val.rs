@@ -17,10 +17,7 @@ impl<T> Clone for GlobalVal<T> {
 impl<T> GlobalVal<T> {
     /// 创建全局对象
     pub const fn new() -> Self {
-        GlobalVal {
-            ptr: 0,
-            data: None,
-        }
+        GlobalVal { ptr: 0, data: None }
     }
     /// 设置全局数据
     pub fn set(&mut self, data: T) {
@@ -62,29 +59,28 @@ macro_rules! global_val {
         static mut $name: GlobalVal<$type> = GlobalVal::new();
     };
     ($name:ident) => {
-        unsafe {$name.clone()}
-    }
+        unsafe { $name.clone() }
+    };
 }
 #[macro_export]
 macro_rules! global_val_set {
     ($name:ident, $value:expr) => {
-         unsafe {$name.set($value)};
+        unsafe { $name.set($value) };
     };
 }
 
 pub struct SharedVal {
     /// 值
-    ptr: usize
+    ptr: usize,
 }
-
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::global_val::GlobalVal;
     use std::mem::size_of;
     use std::thread;
     use std::thread::sleep;
     use std::time::Duration;
-    use crate::utils::global_val::GlobalVal;
 
     #[derive(Debug)]
     struct Global {
@@ -95,8 +91,8 @@ mod tests {
 
     #[test]
     fn test_ptr() {
-        unsafe {GLOBAL.set(Global {count: 0})}
-        let val = unsafe {GLOBAL.clone()};
+        unsafe { GLOBAL.set(Global { count: 0 }) }
+        let val = unsafe { GLOBAL.clone() };
         let data1 = val.get_mut_ref().unwrap();
         let data2 = val.get_mut_ref().unwrap();
         data1.count = data1.count + 1;
@@ -117,8 +113,8 @@ mod tests {
 
     #[test]
     fn test_ptr_thread() {
-        unsafe{&mut GLOBAL}.set(Global { count: 0 });
-        let val = unsafe {GLOBAL.clone()};
+        unsafe { &mut GLOBAL }.set(Global { count: 0 });
+        let val = unsafe { GLOBAL.clone() };
         let val1 = val.clone();
         thread::spawn(move || {
             let mut c = val1.get_mut_ref().unwrap();

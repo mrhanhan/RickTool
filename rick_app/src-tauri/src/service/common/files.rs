@@ -1,20 +1,26 @@
-use std::{fs, vec};
+use image::math;
 use std::fs::File;
 use std::sync::Arc;
-use image::math;
+use std::{fs, vec};
 
-use serde::{Deserialize, Serialize};
-use tauri::api::dialog::FileDialogBuilder;
-use rick_core::error::AppError;
 use crate::app::service::{ClosureFnService, ServiceInvoke, ServiceRegister, ServiceResult};
 use crate::global::RickResult;
 use crate::service::app::get_logo_dir;
 use crate::utils::ThreadSignal;
+use rick_core::error::AppError;
+use serde::{Deserialize, Serialize};
+use tauri::api::dialog::FileDialogBuilder;
 
 /// 服务注册
 pub fn init_service(_register: &ServiceRegister) {
-    _register.register("/common/file/read/open".into(), ClosureFnService::new(file_read_open));
-    _register.register("/common/file/save/open".into(), ClosureFnService::new(file_save_open));
+    _register.register(
+        "/common/file/read/open".into(),
+        ClosureFnService::new(file_read_open),
+    );
+    _register.register(
+        "/common/file/save/open".into(),
+        ClosureFnService::new(file_save_open),
+    );
     _register.register("/common/dir/open".into(), ClosureFnService::new(dir_open));
     _register.register_closure_fn("/common/logo/raed", logo_read);
     _register.register_closure_fn("/common/file/read", file_read);
@@ -59,7 +65,7 @@ pub struct FileOpenResult {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileRead {
-    path: String
+    path: String,
 }
 
 /// 读取Logo 数据
@@ -68,27 +74,23 @@ fn logo_read(read: FileRead) -> RickResult<Vec<u8>> {
     logo_dir.push(read.path);
     match fs::read(logo_dir) {
         Ok(_data) => Ok(_data),
-        Err(ref _err) => {
-            Err(AppError::new(500, _err.to_string()))
-        }
+        Err(ref _err) => Err(AppError::new(500, _err.to_string())),
     }
 }
 
 /// 读取Logo 数据
 fn file_read(read: FileRead) -> RickResult<Vec<u8>> {
-
     match fs::read(read.path) {
         Ok(_data) => {
             println!("文件读取成功:{:#?}", _data.len());
             Ok(_data)
-        },
+        }
         Err(ref _err) => {
             println!("文件读取失败:{:#?}", _err);
             Err(AppError::new(500, _err.to_string()))
         }
     }
 }
-
 
 fn file_save_open(service: ServiceInvoke) {
     common_file_dialog(service, |builder, service, file_open, notify| {
@@ -140,7 +142,10 @@ fn file_read_open(service: ServiceInvoke) {
                 }
                 let _file_path: String = file.unwrap().to_str().unwrap().into();
                 let _need_content = file_open.need_content;
-                service.resolve(ServiceResult::success_data(vec![file_read_result_process(_need_content, _file_path)]));
+                service.resolve(ServiceResult::success_data(vec![file_read_result_process(
+                    _need_content,
+                    _file_path,
+                )]));
                 notify.notify_all();
             });
         }
@@ -205,28 +210,27 @@ fn file_read_result_process(_need_content: bool, _file_path: String) -> FileOpen
     } else {
         let content = fs::read(&_file_path);
         return match content {
-            Ok(_data) => {
-                FileOpenResult {
-                    path: _file_path,
-                    content: Some(_data),
-                    content_status: Some(true),
-                    fail_reason: None,
-                }
-            }
-            Err(_err) => {
-                FileOpenResult {
-                    path: _file_path,
-                    content: Some(vec![]),
-                    content_status: Some(false),
-                    fail_reason: Some(_err.to_string()),
-                }
-            }
+            Ok(_data) => FileOpenResult {
+                path: _file_path,
+                content: Some(_data),
+                content_status: Some(true),
+                fail_reason: None,
+            },
+            Err(_err) => FileOpenResult {
+                path: _file_path,
+                content: Some(vec![]),
+                content_status: Some(false),
+                fail_reason: Some(_err.to_string()),
+            },
         };
     }
 }
 
 /// 通用文件对话框
-fn common_file_dialog<F: FnOnce(FileDialogBuilder, ServiceInvoke, FileOpen, Arc<ThreadSignal>)>(service: ServiceInvoke, callback: F) {
+fn common_file_dialog<F: FnOnce(FileDialogBuilder, ServiceInvoke, FileOpen, Arc<ThreadSignal>)>(
+    service: ServiceInvoke,
+    callback: F,
+) {
     let file_open = service.get::<FileOpen>();
     if let Err(_err) = file_open {
         service.reject(ServiceResult::<i32>::fail_reason("请求错误"));
@@ -252,7 +256,8 @@ fn set_builder(mut builder: FileDialogBuilder, file_open: &FileOpen) -> FileDial
     }
     if let Some(ref _filters) = file_open.filter {
         for _filter in _filters {
-            let _extensions_refs: Vec<&str> = _filter.extensions.iter().map(|s| s.as_str()).collect();
+            let _extensions_refs: Vec<&str> =
+                _filter.extensions.iter().map(|s| s.as_str()).collect();
             builder = builder.add_filter(_filter.name.as_str(), _extensions_refs.as_slice());
         }
     } else {

@@ -1,7 +1,7 @@
+use crate::app::actuator::model::ShellAction;
+use crate::app::actuator::{DataType, DefaultExecuteSession, Executor};
 use std::io::{Read, Write};
 use std::process::Stdio;
-use crate::app::actuator::{DataType, DefaultExecuteSession, Executor};
-use crate::app::actuator::model::{ShellAction};
 
 const BUFFER_SIZE: usize = 128;
 
@@ -79,24 +79,34 @@ impl<'a> Executor<DefaultExecuteSession, ShellAction<'a>> for ShellExecutor {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use crate::app::actuator::model::{ActionArg, ActionEnv, ShellAction, ShellActionBuilder};
+    use crate::app::actuator::shell::ShellExecutor;
+    use crate::app::actuator::Executor;
     use std::io::{stdout, Write};
     use std::sync::Arc;
     use std::thread::sleep;
     use std::time::Duration;
-    use crate::app::actuator::Executor;
-    use crate::app::actuator::model::{ActionArg, ActionEnv, ShellAction, ShellActionBuilder};
-    use crate::app::actuator::shell::ShellExecutor;
 
     #[test]
     pub fn test_shell() {
         let mut action = ShellAction {
             shell: "java",
             word_dir: None,
-            envs: Some(vec![ActionEnv { name: "http_proxy", value: "http://127.0.0.1:7890" }, ActionEnv { name: "https_proxy", value: "http://127.0.0.1:7890" }]),
-            args: Some(vec![ActionArg { value: "https://www.google.com" }]),
+            envs: Some(vec![
+                ActionEnv {
+                    name: "http_proxy",
+                    value: "http://127.0.0.1:7890",
+                },
+                ActionEnv {
+                    name: "https_proxy",
+                    value: "http://127.0.0.1:7890",
+                },
+            ]),
+            args: Some(vec![ActionArg {
+                value: "https://www.google.com",
+            }]),
             data_consumer: Arc::new(|_data, _type| {
                 let mut std = stdout();
                 std.write(_data).unwrap();
@@ -110,42 +120,51 @@ mod tests {
         println!("---- curl -----");
         executor.execute(&mut action).unwrap();
         println!("---- java -----");
-        executor.execute(&mut ShellActionBuilder::new("java", Arc::new(|_data, _| {
-            let mut std = stdout();
-            std.write(_data).unwrap();
-            std.flush().unwrap();
-        })).arg("--version1").arg("--demo")
-            .build()).unwrap();
+        executor
+            .execute(
+                &mut ShellActionBuilder::new(
+                    "java",
+                    Arc::new(|_data, _| {
+                        let mut std = stdout();
+                        std.write(_data).unwrap();
+                        std.flush().unwrap();
+                    }),
+                )
+                .arg("--version1")
+                .arg("--demo")
+                .build(),
+            )
+            .unwrap();
         sleep(Duration::from_millis(5000));
     }
 
     #[derive(Debug)]
-    struct A{
+    struct A {
         a: usize,
-        b: i32
+        b: i32,
     }
 
     #[test]
     fn mem_ptr() {
         let mut d = 0;
         {
-            let a = A {a: 10, b: 31};
+            let a = A { a: 10, b: 31 };
             let c = &a as *const A;
             d = c as usize;
             println!("{:p}", &a);
             println!("{:x}", d);
         }
-        let a = A {a: 11, b: 30};
-        let a = A {a: a.a + 1, b: 30};
-        let a = A {a: a.a + 1, b: 30};
-        let a = A {a: a.a + 1, b: 30};
+        let a = A { a: 11, b: 30 };
+        let a = A { a: a.a + 1, b: 30 };
+        let a = A { a: a.a + 1, b: 30 };
+        let a = A { a: a.a + 1, b: 30 };
         println!("Size: {}", std::mem::size_of_val(&a));
         {
             let c: *mut u64 = d as *mut u64;
             // unsafe {
             //     *c = 12;
             // }
-            let a = unsafe {*c};
+            let a = unsafe { *c };
             println!("{:?}", a);
         }
     }

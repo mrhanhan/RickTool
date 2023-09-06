@@ -1,13 +1,13 @@
-mod query;
 mod cond;
 mod conn;
+mod query;
 mod update;
 
+pub use cond::*;
+pub use conn::*;
+pub use query::*;
 use sqlite::State::Done;
 use sqlite::Statement;
-pub use conn::*;
-pub use cond::*;
-pub use query::*;
 pub use update::*;
 
 /// 表字段
@@ -18,7 +18,7 @@ pub struct TableColumn {
     /// 列名称
     pub column: ColumnValue,
     /// 是否是ID 字段
-    pub id: bool
+    pub id: bool,
 }
 
 /// 描述表的Table
@@ -47,7 +47,7 @@ pub trait SaveBind: Table {
     /// 开始
     fn bind_index(&self, statement: &mut Statement, start_index: usize) -> Result<(), SqlError>;
     /// 更新设置 更新值，include_id 是否包含对ID的设置
-    fn update_set<T: Table>(&self, update: UpdateWrapper<T>, include_id: bool) ->  UpdateWrapper<T>;
+    fn update_set<T: Table>(&self, update: UpdateWrapper<T>, include_id: bool) -> UpdateWrapper<T>;
 }
 
 impl<T: Table + From<sqlite::Row>> QueryDatabaseOperate for T {
@@ -58,18 +58,15 @@ impl<T: Table + SaveBind> UpdateDatabaseOperate for T {
     type Model = T;
 }
 
-
-fn done(mut _statement: Statement, connection: &Connection) -> Result<usize, SqlError>{
+fn done(mut _statement: Statement, connection: &Connection) -> Result<usize, SqlError> {
     loop {
         match _statement.next() {
             Ok(_state) => {
                 if let Done = _state {
-                    return Ok(connection.change_count())
+                    return Ok(connection.change_count());
                 }
             }
-            Err(_err) => {
-                return Err(_err)
-            }
+            Err(_err) => return Err(_err),
         }
     }
 }

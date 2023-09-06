@@ -1,6 +1,6 @@
+mod app;
 mod app_group;
 mod app_runtime;
-mod app;
 
 use crate::app::service::ServiceRegister;
 pub use app::get_logo_dir;

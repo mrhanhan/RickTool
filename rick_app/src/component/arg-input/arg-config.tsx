@@ -21,11 +21,6 @@ export default function ArgConfig(props: ArgConfigProps) {
         setModel({...model, ...value});
         props.onChange?.({...model, ...value})
     };
-    useEffect(() => {
-        setTimeout(() => {
-            defaultValueInputRef.current?.focus();
-        }, 1000);
-    }, []);
     return <div>
         <Row gutter={2}>
             <Col span={4}>类型</Col>

@@ -7,22 +7,22 @@ pub fn hello() -> Connection {
 
 #[derive(ITable, Debug)]
 #[table(table = "user", conn = "hello")]
-struct User{
+struct User {
     /// ID
     #[column(id = true)]
     id: i64,
     /// 名称
-    #[column(column="username")]
+    #[column(column = "username")]
     name: String,
     /// 密码
-    password: String
+    password: String,
 }
 #[test]
 fn test() {
-    User::save(&User{
+    User::save(&User {
         id: 1,
         name: "Hello".into(),
-        password: "Hello".into()
+        password: "Hello".into(),
     });
     println!("{:#?}", User::select_list(SqlWrapper::new().eq("id", 1)));
     let conn = hello();

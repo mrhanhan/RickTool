@@ -1,5 +1,5 @@
-pub mod application;
 pub mod actuator;
+pub mod application;
 pub mod listener;
-pub mod service;
 pub mod module;
+pub mod service;

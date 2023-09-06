@@ -6,11 +6,11 @@ thread_local! {
 #[derive(Clone, Debug)]
 pub enum ThreadExecuteStatus {
     Panic,
-    Ok
+    Ok,
 }
 
 pub fn add_callback(_callback: Box<dyn Fn(&ThreadExecuteStatus)>) {
-    CALLBACK.with(|d|{
+    CALLBACK.with(|d| {
         d.borrow_mut().push(_callback);
     });
 }
@@ -22,5 +22,4 @@ pub fn call_callback(status: ThreadExecuteStatus) {
             _callback(&status);
         }
     })
-
 }

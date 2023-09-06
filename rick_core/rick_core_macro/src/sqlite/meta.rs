@@ -1,5 +1,5 @@
-use darling::{FromMeta};
-use syn::{Type};
+use darling::FromMeta;
+use syn::Type;
 
 #[derive(Debug, FromMeta)]
 pub struct TableMeta {
@@ -7,7 +7,7 @@ pub struct TableMeta {
     #[darling(default)]
     pub table: Option<String>,
     #[darling(default)]
-    pub conn: Option<String>
+    pub conn: Option<String>,
 }
 
 #[derive(Debug, FromMeta)]
@@ -20,7 +20,7 @@ pub struct TableFieldMeta {
     /// 是否是ID
     pub id: Option<bool>,
     /// 表达式
-    pub default: Option<String>
+    pub default: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -36,7 +36,7 @@ pub struct TableFieldInfo {
     /// 表达式
     pub default: Option<String>,
     /// 类型
-    pub ty: Type
+    pub ty: Type,
 }
 #[derive(Debug)]
 pub struct TableInfo {
@@ -45,5 +45,5 @@ pub struct TableInfo {
     /// 拦截函数
     pub conn: String,
     //// 字段
-    pub fields: Vec<TableFieldInfo>
+    pub fields: Vec<TableFieldInfo>,
 }

@@ -1,19 +1,18 @@
+use crate::utils::convert_mut;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
-use crate::utils::convert_mut;
 
 pub struct ArcVal<T: Sized> {
     value: Arc<Box<T>>,
-    lock: Arc<Mutex<bool>>
+    lock: Arc<Mutex<bool>>,
 }
-
 
 impl<T: Sized + 'static> ArcVal<T> {
     /// 创建新的值
     pub fn new(data: T) -> Self {
         Self {
             value: Arc::new(Box::new(data)),
-            lock: Arc::new(Mutex::new(false))
+            lock: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -41,7 +40,7 @@ impl<T> Clone for ArcVal<T> {
     fn clone(&self) -> Self {
         Self {
             value: self.value.clone(),
-            lock: self.lock.clone()
+            lock: self.lock.clone(),
         }
     }
 }

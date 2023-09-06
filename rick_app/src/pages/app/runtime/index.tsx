@@ -219,7 +219,7 @@ export default function AppRuntimePage() {
         })
     };
     const onDeleteAppRuntime = (id: number) => {
-        const instance = modal.warning({
+        const instance = modal.confirm({
             title: '系统提示',
             content: '是否删除当前运行环境',
             onOk: () => {

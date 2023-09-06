@@ -27,3 +27,17 @@ export async function saveApp(model: App) {
     return call<Result<App>>('/app/save', model);
 }
 
+export async function updateApp(model: App) {
+    return call<Result<App>>('/app/update', model);
+}
+
+export async function detailApp(id: number) {
+    return call<Result<App>>('/app/detail', {id});
+}
+
+export async function delApp(id: number) {
+    return call<Result<App>>('/app/delete', {id});
+}
+
+
+

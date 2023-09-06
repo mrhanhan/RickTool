@@ -1,8 +1,8 @@
-use proc_macro::{TokenStream};
+use crate::sqlite::meta::TableInfo;
+use proc_macro::TokenStream;
 use proc_macro2::Spacing::{Alone, Joint};
 use quote::{format_ident, quote};
-use syn::{DeriveInput, parse_str, Path};
-use crate::sqlite::meta::{TableInfo};
+use syn::{parse_str, DeriveInput, Path};
 
 /// 实现Table
 pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
@@ -14,7 +14,7 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
     let mut bind_fields = quote!();
     let mut bind_index_fields = quote!();
     let mut update_set_fields = quote!();
-    let fields = Vec::from_iter(_info.fields.iter().map(|m|{m.clone()}));
+    let fields = Vec::from_iter(_info.fields.iter().map(|m| m.clone()));
     let mut column_index = 0usize;
     for i in 0..fields.len() {
         let _column_info = fields.get(i).unwrap();
@@ -24,7 +24,7 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
         let ty = &_column_info.ty;
         let f = format_ident!("{}", field);
         if !_column_info.exclude {
-            columns.extend(quote!{
+            columns.extend(quote! {
                 vec.push(rick_core::sqlite::TableColumn {
                     field: #field,
                     column: #column,
@@ -32,20 +32,20 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
                 });
             });
             let bind_index = format!(":{}", column);
-            bind_fields.extend(quote!{
+            bind_fields.extend(quote! {
                let val = Into::<rick_core::sqlite::SqlValue>::into(&self.#f);
                 if let Err(_err) = statement.bind((#bind_index, &val)) {
                     return Err(_err);
                 }
             });
-            bind_index_fields.extend(quote!{
+            bind_index_fields.extend(quote! {
                 let val = Into::<rick_core::sqlite::SqlValue>::into(&self.#f);
                 if let Err(_err) = statement.bind((start_index + #column_index, &val)) {
                     return Err(_err);
                 }
             });
             let is_id = _column_info.id;
-            update_set_fields.extend(quote!{
+            update_set_fields.extend(quote! {
                 if ! #is_id || include_id {
                     update = update.set(#column, &self.#f);
                 }
@@ -53,19 +53,19 @@ pub fn impl_table(_info: TableInfo, input: DeriveInput) -> TokenStream {
             column_index = column_index + 1;
         }
         if i > 0 {
-            from_fields.extend(quote!{,
+            from_fields.extend(quote! {,
             });
         }
         if _column_info.exclude {
             if let Some(ref _default) = _column_info.default {
-                let val = quote!{#_default};
-                from_fields.extend(quote!{
+                let val = quote! {#_default};
+                from_fields.extend(quote! {
                     #f: #val,
                 });
             } else {
-                let ty = process_generic(quote!{#ty});
+                let ty = process_generic(quote! {#ty});
                 // 处理泛型
-                from_fields.extend(quote!{
+                from_fields.extend(quote! {
                     #f: #ty::default()
                 });
             }
@@ -129,15 +129,19 @@ fn process_generic(ty: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
     let mut vec = Vec::new();
     let mut count = 0;
     for token in ty {
-        if let proc_macro2::TokenTree::Punct(_punct)  = token {
-            if _punct.as_char() == '<'{
+        if let proc_macro2::TokenTree::Punct(_punct) = token {
+            if _punct.as_char() == '<' {
                 if count == 0 {
-                    vec.push(proc_macro2::TokenTree::Punct(proc_macro2::Punct::new(':', Joint)));
-                    vec.push(proc_macro2::TokenTree::Punct(proc_macro2::Punct::new(':', Alone)));
+                    vec.push(proc_macro2::TokenTree::Punct(proc_macro2::Punct::new(
+                        ':', Joint,
+                    )));
+                    vec.push(proc_macro2::TokenTree::Punct(proc_macro2::Punct::new(
+                        ':', Alone,
+                    )));
                 }
-               count = count + 1;
+                count = count + 1;
             }
-            if _punct.as_char() == '>'{
+            if _punct.as_char() == '>' {
                 count = count - 1;
             }
             vec.push(proc_macro2::TokenTree::Punct(_punct));

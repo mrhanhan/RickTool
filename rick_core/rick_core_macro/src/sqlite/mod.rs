@@ -1,18 +1,23 @@
-mod meta;
 mod impl_table;
+mod meta;
 
-use proc_macro::TokenStream;
-use syn::{Data, DeriveInput, Field, Fields};
-use darling::{Error, FromMeta};
 use crate::sqlite::impl_table::impl_table;
 use crate::sqlite::meta::{TableFieldInfo, TableFieldMeta, TableInfo, TableMeta};
 use crate::utils::find_attribute;
+use darling::{Error, FromMeta};
+use proc_macro::TokenStream;
+use syn::{Data, DeriveInput, Field, Fields};
 
 /// 获取字段信息
 pub fn get_table_field_info(_field: Field) -> TableFieldInfo {
-    let mut field = TableFieldInfo {column: String::new(), exclude: false, id: false,
-        field: _field.ident.unwrap().to_string(), ty: _field.ty.clone(),
-        default: None};
+    let mut field = TableFieldInfo {
+        column: String::new(),
+        exclude: false,
+        id: false,
+        field: _field.ident.unwrap().to_string(),
+        ty: _field.ty.clone(),
+        default: None,
+    };
     if let Some(_column_attribute) = find_attribute(_field.attrs, "column") {
         if let Ok(_meta) = TableFieldMeta::from_meta(&_column_attribute.meta) {
             if let Some(_exclude) = _meta.exclude {
@@ -26,7 +31,6 @@ pub fn get_table_field_info(_field: Field) -> TableFieldInfo {
                 field.column.push_str(_column.as_str());
                 return field;
             }
-
         }
     }
     field.column.push_str(field.field.as_str());
@@ -35,7 +39,11 @@ pub fn get_table_field_info(_field: Field) -> TableFieldInfo {
 
 pub fn get_table_meta(input: &DeriveInput) -> Result<TableInfo, Error> {
     // 获取Struct Attribute
-    let mut table_info = TableInfo { table : String::new(), conn: String::new(), fields: Vec::new()};
+    let mut table_info = TableInfo {
+        table: String::new(),
+        conn: String::new(),
+        fields: Vec::new(),
+    };
     if let Some(_table_attribute) = find_attribute(input.attrs.clone(), "table") {
         match TableMeta::from_meta(&_table_attribute.meta) {
             Ok(mut _meta) => {
@@ -48,12 +56,15 @@ pub fn get_table_meta(input: &DeriveInput) -> Result<TableInfo, Error> {
                 if let Some(ref _conn) = _meta.conn {
                     table_info.conn.push_str(_conn.as_str());
                 } else {
-                    return Err(Error::custom("#[table] 格式错误, conn 配置必填 #[table(conn=\"必填\")]"));
+                    return Err(Error::custom(
+                        "#[table] 格式错误, conn 配置必填 #[table(conn=\"必填\")]",
+                    ));
                 }
-
             }
             Err(_err) => {
-                return Err(Error::custom("#[table] 格式错误, #[table(table = \"表名称\", conn = \"::sqlite\")]"));
+                return Err(Error::custom(
+                    "#[table] 格式错误, #[table(table = \"表名称\", conn = \"::sqlite\")]",
+                ));
             }
         }
     }
@@ -66,9 +77,11 @@ pub fn get_table_meta(input: &DeriveInput) -> Result<TableInfo, Error> {
                 }
             }
             Fields::Unnamed(_fields) => {
-                return Err(Error::custom("无法解析此 struct 格式 请使用 Struct Named 格式"));
+                return Err(Error::custom(
+                    "无法解析此 struct 格式 请使用 Struct Named 格式",
+                ));
             }
-            _=> {
+            _ => {
                 return Err(Error::custom("空 struct 请编写字段"));
             }
         }
@@ -79,16 +92,11 @@ pub fn get_table_meta(input: &DeriveInput) -> Result<TableInfo, Error> {
     Ok(table_info)
 }
 
-
 /// 解析Toke
 ///
 pub fn derive_sqlite_table(input: DeriveInput) -> TokenStream {
-    match get_table_meta(&input)  {
-        Ok(_info) => {
-            impl_table(_info, input)
-        }
-        Err(_error) => {
-            TokenStream::from(_error.write_errors())
-        }
+    match get_table_meta(&input) {
+        Ok(_info) => impl_table(_info, input),
+        Err(_error) => TokenStream::from(_error.write_errors()),
     }
 }

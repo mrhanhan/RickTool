@@ -21,11 +21,6 @@ export default function ArgConfig(props: ArgConfigProps) {
         setModel({...model, ...value});
         props.onChange?.({...model, ...value})
     };
-    useEffect(() => {
-        setTimeout(() => {
-            defaultValueInputRef.current?.focus();
-        }, 1000);
-    }, []);
     return <div>
         <Row gutter={2}>
             <Col span={4}>类型</Col>
@@ -52,10 +47,10 @@ export default function ArgConfig(props: ArgConfigProps) {
         <Row gutter={2}>
             <Col span={4}>标记</Col>
             <Col span={20}>
-                <Checkbox onChange={e => {
+                <Checkbox defaultChecked={model.optional === 1} onChange={e => {
                     onUpdate({optional: e.target.checked ? 1 : 0});
                 }}>可选参数</Checkbox>
-                <Checkbox onChange={e => {
+                <Checkbox defaultChecked={model.multiple === 1} onChange={e => {
                     onUpdate({multiple: e.target.checked ? 1 : 0});
                 }}>多选参数</Checkbox>
             </Col>

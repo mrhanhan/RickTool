@@ -1,11 +1,10 @@
-use rick_core::sqlite::{QueryDatabaseOperate, SqlWrapper, UpdateDatabaseOperate};
 use crate::app::service::ServiceRegister;
-use crate::global::{RickResult};
-use crate::seq::{increase_table};
+use crate::global::RickResult;
+use crate::seq::increase_table;
 use crate::service::{common_result, convert_result};
 use crate::store::app::AppGroup;
 use crate::store::Id;
-
+use rick_core::sqlite::{QueryDatabaseOperate, SqlWrapper, UpdateDatabaseOperate};
 
 /// 服务注册
 pub fn init_service(_register: &ServiceRegister) {

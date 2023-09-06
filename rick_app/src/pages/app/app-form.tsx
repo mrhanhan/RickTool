@@ -15,7 +15,7 @@ import AppStart from "./items/app-start";
 
 export interface AppFormProps {
     form?: FormInstance,
-    model?: App,
+    model?: Partial<App>,
 }
 
 
@@ -32,12 +32,12 @@ export function AppForm(props: AppFormProps) {
         });
     };
     const targetType = Form.useWatch("target_type", props.form);
-
     useEffect(() => {
         loadGroup();
     }, []);
+    console.log(props.model);
     return <div>
-        <Form form={props.form} initialValues={{group_id: 0, target_type: 100, ...props.model}} autoComplete={"off"}>
+        <Form form={props.form} preserve={true} initialValues={{group_id: 0, target_type: 100, ...props.model}} autoComplete={"off"}>
             <Row gutter={16}>
                 <Col xs={24} sm={24} md={12} className={"app_page-form_border"}>
                     <Divider dashed orientation={"left"}>基础信息</Divider>

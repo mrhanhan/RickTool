@@ -30,7 +30,6 @@ export default function ContextMenu(props: ContextMenuProps) {
     const onContextMenu = (e: MouseEvent<HTMLDivElement>, value: any) => {
         const {x, y} = containerRef.current?.getBoundingClientRect()!;
         setState({...state, x: e.pageX - x, y: e.pageY - y, value, visible: true});
-        console.log({...state, x: e.pageX - x, y: e.pageY - y, value, visible: true});
     };
 
     useEffect(() => {

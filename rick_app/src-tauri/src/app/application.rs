@@ -1,19 +1,18 @@
 use std::process::exit;
-use std::sync::{Arc, Mutex, RwLock};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, RwLock};
 use tauri::{App, RunEvent, Wry};
 
-use std::time::Duration;
-use crate::app::listener::{EventBus};
+use crate::app::listener::EventBus;
 use crate::app::module::ModuleManager;
 use crate::app::service::ServiceRegister;
 use crate::define_event;
 use crate::global::{RickApp, RickAppHandler};
 use crate::utils::{ThreadPool, ThreadSignal};
+use std::time::Duration;
 
 /// 应用程序事件
 define_event!(ApplicationEvent => Started, Stoped);
-
 
 /// RickTool 的应用程序功能
 pub struct Application {
@@ -30,9 +29,8 @@ pub struct Application {
     /// 服务注册器
     _service_register: ServiceRegister,
     /// 模块管理器
-    _module_manager: ModuleManager
+    _module_manager: ModuleManager,
 }
-
 
 #[allow(unused)]
 impl Application {
@@ -45,7 +43,7 @@ impl Application {
             _thread_pool: Arc::new(ThreadPool::new(10, 1024, Duration::from_millis(10))),
             _status: Arc::new((ThreadSignal::new(), AtomicBool::new(false))),
             _service_register: ServiceRegister::new(),
-            _module_manager: ModuleManager::new()
+            _module_manager: ModuleManager::new(),
         }
     }
 }
@@ -94,16 +92,16 @@ impl Application {
         let app = mutex_guard.take().unwrap();
         let ctx = self as *const Application as usize;
         app.run(move |_handler, _event| {
-            let application = unsafe {&*(ctx as *const Application)};
+            let application = unsafe { &*(ctx as *const Application) };
             let event_context = application.event_context();
             match _event {
                 RunEvent::Ready => {
                     event_context.emit_into(ApplicationEvent::Started, application.clone());
-                },
-                RunEvent::ExitRequested {api, .. } => {
+                }
+                RunEvent::ExitRequested { api, .. } => {
                     println!("ExitRequested");
                     event_context.emit_into(ApplicationEvent::Stoped, application.clone());
-                },
+                }
                 _ => {}
             }
         });
@@ -118,7 +116,7 @@ impl Application {
             _status: self._status.clone(),
             _app_handler: self._app_handler.clone(),
             _service_register: self._service_register.clone(),
-            _module_manager: self._module_manager.clone()
+            _module_manager: self._module_manager.clone(),
         }
     }
 }

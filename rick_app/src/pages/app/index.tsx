@@ -14,13 +14,22 @@ import {
     Divider
 } from "antd";
 import './app.less';
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {App, AppGroup} from "./app-model";
-import {delAppGroup, listApp, listAppGroup, saveApp, saveAppGroup, updateAppGroup} from "./app-request";
+import {
+    delApp,
+    delAppGroup,
+    detailApp,
+    listApp,
+    listAppGroup,
+    saveApp,
+    saveAppGroup, updateApp,
+    updateAppGroup
+} from "./app-request";
 import {commonProcess, errorMessage, getErrorMessage} from "../../model";
 import {DeleteOutlined, EditOutlined} from "@ant-design/icons";
 import {AppForm} from "./app-form";
-import {numberToBase64Img, processForm} from "./data";
+import {appToForm, numberToBase64Img, processForm} from "./data";
 import {DEFAULT_LOGO_URL} from "../../component/logo-input";
 import ContextMenu from "../../component/context-menu";
 import ContextMenuItem from "../../component/context-menu/context-menu-item";
@@ -100,7 +109,7 @@ function AppGroupList(props: AppGroupListProps) {
         });
     };
     const openDeleteAppGroup = (id: number) => {
-        const instance = modal.warning({
+        const instance = modal.confirm({
             title: '系统提示',
             content: '是否删除当前分组',
             centered: true,
@@ -173,8 +182,8 @@ function AppList(props: AppListProps) {
         <List size={"small"}>
             <List.Item onClick={() => props.onRun(app)}>运行</List.Item>
             <List.Item onClick={() => props.onRun(app)}>管理员运行</List.Item>
-            <List.Item onClick={() => props.onRun(app)}>编辑</List.Item>
-            <List.Item onClick={() => props.onRun(app)}>删除</List.Item>
+            <List.Item onClick={() => props.onEdit(app)}>编辑</List.Item>
+            <List.Item onClick={() => props.onDel(app)}>删除</List.Item>
         </List>
     </div>;
 
@@ -200,6 +209,7 @@ function AppList(props: AppListProps) {
 export default function AppPage() {
     const {message, modal} = AntApp.useApp();
     const [form] = Form.useForm();
+    const groupIdRef = useRef(0);
     const [loading, setLoading] = useState(false);
     const [dataSource, setDataSource] = useState([] as App[]);
     const onLoad = (groupId: number) => {
@@ -218,14 +228,14 @@ export default function AppPage() {
             title: '新增App',
             icon: null,
             width: '80%',
-            content: <AppForm form={form}/>,
+            content: <AppForm form={form} model={{group_id: groupIdRef.current}}/>,
             onOk: () => {
                 setLoading(true);
                 let model = processForm(form.getFieldsValue());
                 commonProcess(saveApp(model)).then(app => {
                     message.success("保存App成功").then();
                     setLoading(false);
-                    onLoad(0);
+                    onLoad(groupIdRef.current);
                     instance.destroy();
                 }).catch(reason => {
                     message.error('保存失败:' + getErrorMessage(reason)).then();
@@ -238,29 +248,85 @@ export default function AppPage() {
         });
     };
 
+    const openEditAppForm = (id: number) => {
+        commonProcess(detailApp(id)).then(data => {
+            let model = appToForm(data);
+            const instance = modal.confirm({
+                title: '编辑App',
+                icon: null,
+                width: '80%',
+                content: <AppForm form={form} model={model}/>,
+                onOk: () => {
+                    setLoading(true);
+                    let model = processForm(form.getFieldsValue());
+                    model.id = data.id;
+                    model.create_time = data.create_time;
+                    commonProcess(updateApp(model)).then(app => {
+                        message.success("保存App成功").then();
+                        setLoading(false);
+                        onLoad(groupIdRef.current);
+                        instance.destroy();
+                    }).catch(reason => {
+                        message.error('保存失败:' + getErrorMessage(reason)).then();
+                        setLoading(false);
+                    });
+                },
+                onCancel: () => {
+                    instance.destroy();
+                }
+            });
+        }).catch((reason) => {
+            message.error(getErrorMessage(reason)).then();
+        });
+    };
 
+    const openDeleteApp = (id: number) => {
+        const instance = modal.confirm({
+            title: '系统提示',
+            content: '是否删除当前App',
+            onOk: () => {
+                setLoading(true);
+                delApp(id)
+                    .then(() => {
+                        onLoad(groupIdRef.current);
+                        message.success('删除成功').then();
+                    })
+                    .catch((reason) => {
+                        errorMessage(message)(reason);
+                        setLoading(false);
+                    });
+                instance.destroy();
+            },
+            onCancel: () => {
+                instance.destroy();
+            }
+        });
+    };
     useEffect(() => {
-        onLoad(0);
+        onLoad(groupIdRef.current);
     }, []);
 
     const extraNode = <>
         <Button.Group>
-            <Button onClick={openCreateAppForm}>新增</Button>
+            <Button onClick={() => openCreateAppForm()}>新增</Button>
         </Button.Group>
     </>;
 
     return <div className={"app_page"}>
         <Row gutter={8}>
             <Col className="group">
-                <AppGroupList onSelected={({id}) => onLoad(id)}/>
+                <AppGroupList onSelected={({id}) => {
+                    groupIdRef.current = id;
+                    onLoad(id);
+                }}/>
             </Col>
             <Col flex={1}>
                 <Card title={"App"} extra={extraNode} loading={loading}>
                     <AppList dataSource={dataSource}
-                             onEdit={app => {}}
+                             onEdit={app => openEditAppForm(app.id)}
                              onRun={app => {}}
                              onRunAs={app => {}}
-                             onDel={app => {}}
+                             onDel={app => openDeleteApp(app.id)}
                     />
                 </Card>
             </Col>

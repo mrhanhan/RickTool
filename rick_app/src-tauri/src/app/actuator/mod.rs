@@ -1,17 +1,18 @@
-use std::sync::{Arc, Mutex};
 use crate::app::actuator::model::Action;
+use std::sync::{Arc, Mutex};
 
 mod model;
 mod shell;
 
-
 #[derive(Copy, Clone, Debug)]
 pub enum DataType {
-    Stdout, StdErr, Other
+    Stdout,
+    StdErr,
+    Other,
 }
 
 /// 执行会话
-pub trait ExecuteSession: Sync + Send{
+pub trait ExecuteSession: Sync + Send {
     /// on_close 执行结束时候调用
     fn on_finish(&self, callback: Box<dyn Fn(&dyn ExecuteSession)>);
     /// 写入数据
@@ -22,16 +23,15 @@ pub trait ExecuteSession: Sync + Send{
 pub(crate) struct DefaultExecuteSession {
     pub(crate) on_finish_callbacks: Arc<Mutex<Vec<Box<dyn Fn(&dyn ExecuteSession)>>>>,
     pub(crate) consumer_data: Arc<Option<Mutex<Box<dyn FnMut(&[u8])>>>>,
-    pub(crate) finish_status: Arc<Mutex<bool>>
+    pub(crate) finish_status: Arc<Mutex<bool>>,
 }
 
 impl DefaultExecuteSession {
-
     pub(crate) fn new() -> Self {
         Self {
             on_finish_callbacks: Arc::new(Mutex::new(Vec::new())),
             finish_status: Arc::new(Mutex::new(false)),
-            consumer_data: Arc::new(Option::None)
+            consumer_data: Arc::new(Option::None),
         }
     }
 
@@ -51,9 +51,8 @@ impl DefaultExecuteSession {
             match self.finish_status.lock() {
                 Ok(mut _status) => {
                     *_status = true;
-                },
-                Err(mut _err) => {
                 }
+                Err(mut _err) => {}
             }
         }
         let lock = self.on_finish_callbacks.lock();
@@ -102,8 +101,6 @@ impl Clone for DefaultExecuteSession {
         }
     }
 }
-
-
 
 pub trait Executor<T: ExecuteSession, A: Action> {
     /// 执行Action

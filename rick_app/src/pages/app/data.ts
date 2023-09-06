@@ -115,3 +115,34 @@ export function numberToBase64Img(data: number[]): string {
     }
     return `data:image/jpeg;base64,` + window.btoa(str);
 }
+
+
+export function appToForm(app: App): Partial<App> {
+
+    const parse = (val: string) => {
+        try{
+            return JSON.parse(val);
+        }catch (e) {
+            console.log(val);
+            return val;
+        }
+    };
+    let appExt = app.ext_vec;
+    let appStart = app.start_vec;
+    delete app.logo;
+    delete app.ext_vec;
+    delete app.start_vec;
+    let model = {...app} as any;
+    appExt?.forEach(i => {
+        model[`ext.${i.code}`] = parse(i.value);
+    });
+    model.start_vec = appStart?.map(it => {
+        let ext = it.ext_vec;
+        delete it.ext_vec;
+        ext?.forEach(i => {
+            (it as any)[`ext.${i.code}`] = parse(i.value);
+        });
+        return it;
+    });
+    return  model;
+}

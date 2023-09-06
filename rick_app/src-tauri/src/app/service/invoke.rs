@@ -1,9 +1,9 @@
-use std::sync::{Arc, Mutex};
-use rick_core::error::AppError;
-use serde::{Serialize, de::DeserializeOwned};
-use serde_json::{to_value, Value, from_value};
-use tauri::{StateManager, Window};
 use crate::global::{RickInvoke, RickInvokeMessage, RickInvokeResolver};
+use rick_core::error::AppError;
+use serde::{de::DeserializeOwned, Serialize};
+use serde_json::{from_value, to_value, Value};
+use std::sync::{Arc, Mutex};
+use tauri::{StateManager, Window};
 
 /// 服务调用
 #[derive(Clone)]
@@ -12,11 +12,10 @@ pub struct ServiceInvoke {
     data: Value,
     window: Window,
     state: Arc<StateManager>,
-    value: Arc<Mutex<Option<Value>>>
+    value: Arc<Mutex<Option<Value>>>,
 }
 
 impl ServiceInvoke {
-
     pub fn exception(&self) -> bool {
         *self.exception.lock().unwrap()
     }
@@ -42,22 +41,23 @@ impl ServiceInvoke {
     }
 
     /// 结束值
-    pub fn resolve<T: Serialize>(&self, value: T){
+    pub fn resolve<T: Serialize>(&self, value: T) {
         *self.value.lock().unwrap() = Some(to_value(value).unwrap());
     }
     /// 结束值
-    pub fn reject<T: Serialize>(&self, value: T){
+    pub fn reject<T: Serialize>(&self, value: T) {
         *self.exception.lock().unwrap() = true;
         *self.value.lock().unwrap() = Some(to_value(value).unwrap());
     }
 
     pub fn send(self, invoke: RickInvoke) {
-        let exception = {*(&self).exception.lock().unwrap()};
+        let exception = { *(&self).exception.lock().unwrap() };
         let value = {
             match *(&self).value.lock().unwrap() {
-                None => {Value::Null}
-                Some(ref _val) => _val.clone()
-            }};
+                None => Value::Null,
+                Some(ref _val) => _val.clone(),
+            }
+        };
         if exception {
             invoke.resolver.reject(value);
         } else {
@@ -65,19 +65,19 @@ impl ServiceInvoke {
         }
     }
     pub fn send_resolver(self, resolver: RickInvokeResolver) {
-        let exception = {*(&self).exception.lock().unwrap()};
+        let exception = { *(&self).exception.lock().unwrap() };
         let value = {
             match *(&self).value.lock().unwrap() {
-                None => {Value::Null}
-                Some(ref _val) => _val.clone()
-            }};
+                None => Value::Null,
+                Some(ref _val) => _val.clone(),
+            }
+        };
         if exception {
             resolver.reject(value);
         } else {
             resolver.resolve(value);
         }
     }
-
 }
 
 impl From<&RickInvoke> for ServiceInvoke {
@@ -87,7 +87,7 @@ impl From<&RickInvoke> for ServiceInvoke {
             data: value.message.payload().clone(),
             window: value.message.window(),
             state: value.message.state().clone(),
-            value: Arc::new(Mutex::new(None))
+            value: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -99,7 +99,7 @@ impl From<&RickInvokeMessage> for ServiceInvoke {
             data: message.payload().clone(),
             window: message.window(),
             state: message.state().clone(),
-            value: Arc::new(Mutex::new(None))
+            value: Arc::new(Mutex::new(None)),
         }
     }
 }

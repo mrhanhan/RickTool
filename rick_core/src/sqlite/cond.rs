@@ -1,10 +1,10 @@
-use sqlite::{BindableWithIndex, ParameterIndex, Statement, Value};
 use crate::sqlite::cond::SqlCondEnum::{Group, In};
 use crate::sqlite::cond::SqlCondJoin::{And, AndGroup, Or, OrGroup};
-use crate::sqlite::{Connection, SqlError};
 use crate::sqlite::SqlValue::{Float, Null, Number, Text};
-use std::str::FromStr;
+use crate::sqlite::{Connection, SqlError};
 use serde::{Serialize, Serializer};
+use sqlite::{BindableWithIndex, ParameterIndex, Statement, Value};
+use std::str::FromStr;
 
 pub type ColumnValue = &'static str;
 
@@ -25,7 +25,6 @@ macro_rules! sql_value_impl {
                 SqlValue::Number(*value as i64)
             }
         }
-
     };
     ($input: ty, Float) => {
         impl From<$input> for SqlValue {
@@ -38,18 +37,17 @@ macro_rules! sql_value_impl {
                 SqlValue::Float(*value as f64)
             }
         }
-
-    }
+    };
 }
 macro_rules! sql_value_into_number {
     ($input: ty) => {
         impl From<&SqlValue> for $input {
             fn from(value: &SqlValue) -> Self {
-                   match value {
+                match value {
                     Text(str) => Self::from_str(str.as_str()).unwrap(),
                     Float(value) => *value as $input,
                     Number(value) => *value as $input,
-                    _ => 0 as $input
+                    _ => 0 as $input,
                 }
             }
         }
@@ -58,7 +56,6 @@ macro_rules! sql_value_into_number {
                 From::<&SqlValue>::from(self)
             }
         }
-
     };
 }
 
@@ -71,16 +68,19 @@ pub enum SqlValue {
     /// 文本
     Text(String),
     /// 空
-    Null
+    Null,
 }
 
 impl Serialize for SqlValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         match self {
             Text(ref str) => serializer.serialize_str(str.as_str()),
             Float(ref value) => serializer.serialize_f64(*value),
             Number(ref value) => serializer.serialize_i64(*value),
-            _ => serializer.serialize_none()
+            _ => serializer.serialize_none(),
         }
     }
 }
@@ -94,11 +94,10 @@ impl TryFrom<&Value> for SqlValue {
             Value::String(ref str) => SqlValue::Text(str.clone()),
             Value::Float(ref value) => SqlValue::Float(*value),
             Value::Integer(ref value) => SqlValue::Number(*value),
-            _ => Null
+            _ => Null,
         })
     }
 }
-
 
 impl From<&SqlValue> for String {
     fn from(value: &SqlValue) -> Self {
@@ -106,7 +105,7 @@ impl From<&SqlValue> for String {
             Text(str) => str.clone(),
             Float(value) => format!("{}", value),
             Number(value) => format!("{}", value),
-            _ => String::new()
+            _ => String::new(),
         }
     }
 }
@@ -119,9 +118,9 @@ impl To<String> for SqlValue {
 impl<T: From<SqlValue>> To<Option<T>> for SqlValue {
     fn to(&self) -> Option<T> {
         if let Null = self {
-            return None
+            return None;
         } else {
-            return Some(T::from(self.clone()))
+            return Some(T::from(self.clone()));
         }
     }
 }
@@ -142,7 +141,7 @@ impl<'a, T: From<&'a SqlValue>> To<Option<T>> for &'a SqlValue {
     fn to(&self) -> Option<T> {
         match &self {
             Null => None,
-            _ => Some(T::from(self))
+            _ => Some(T::from(self)),
         }
     }
 }
@@ -150,18 +149,10 @@ impl<'a, T: From<&'a SqlValue>> To<Option<T>> for &'a SqlValue {
 impl BindableWithIndex for &SqlValue {
     fn bind<T: ParameterIndex>(self, _statement: &mut Statement, _index: T) -> sqlite::Result<()> {
         match self.clone() {
-            Number(_number) => {
-                _number.bind(_statement, _index)
-            }
-            Float(_float) => {
-                _float.bind(_statement, _index)
-            }
-            Text(_string) => {
-                _string.as_str().bind(_statement, _index)
-            }
-            Null => {
-                Option::<&str>::None.bind(_statement, _index)
-            }
+            Number(_number) => _number.bind(_statement, _index),
+            Float(_float) => _float.bind(_statement, _index),
+            Text(_string) => _string.as_str().bind(_statement, _index),
+            Null => Option::<&str>::None.bind(_statement, _index),
         }
     }
 }
@@ -263,7 +254,11 @@ impl SqlWrapper {
 impl SqlWrapper {
     /// 添加条件
     pub fn apply_cond(&mut self, column: ColumnValue, cond: SqlCondEnum) -> &mut Self {
-        self.cond.push(SqlCond { column, cond, join: self.current_join });
+        self.cond.push(SqlCond {
+            column,
+            cond,
+            join: self.current_join,
+        });
         self
     }
 
@@ -308,27 +303,45 @@ impl SqlWrapper {
     }
     /// and_wrapper
     pub fn and_wrapper<F: Fn() -> SqlWrapper>(&mut self, func: F) -> &mut Self {
-        self.cond.push(SqlCond { column: "", cond: Group(func()), join: AndGroup });
+        self.cond.push(SqlCond {
+            column: "",
+            cond: Group(func()),
+            join: AndGroup,
+        });
         self
     }
     /// and_wrapper
     pub fn or_wrapper<F: Fn() -> SqlWrapper>(&mut self, func: F) -> &mut Self {
-        self.cond.push(SqlCond { column: "", cond: Group(func()), join: OrGroup });
+        self.cond.push(SqlCond {
+            column: "",
+            cond: Group(func()),
+            join: OrGroup,
+        });
         self
     }
     /// 拼接Sql
     pub fn append<S: AsRef<str>>(&mut self, sql: S) -> &mut Self {
-        self.append_sql.push(SqlAppend { sql: String::from(sql.as_ref()), args: Vec::new() });
+        self.append_sql.push(SqlAppend {
+            sql: String::from(sql.as_ref()),
+            args: Vec::new(),
+        });
         self
     }
     /// 拼接Sql
     pub fn append_args<S: AsRef<str>>(&mut self, sql: S, args: Vec<SqlValue>) -> &mut Self {
-        self.append_sql.push(SqlAppend { sql: String::from(sql.as_ref()), args });
+        self.append_sql.push(SqlAppend {
+            sql: String::from(sql.as_ref()),
+            args,
+        });
         self
     }
 
     /// 连接
-    pub fn process<'l>(&self, sql: String, conn: &'l Connection) -> Result<(Statement<'l>, &'l Connection), SqlError>{
+    pub fn process<'l>(
+        &self,
+        sql: String,
+        conn: &'l Connection,
+    ) -> Result<(Statement<'l>, &'l Connection), SqlError> {
         let mut cond_sql = String::new();
         let mut append_sql = String::new();
         let mut cond_index: usize = 0;
@@ -384,7 +397,7 @@ impl SqlWrapper {
                 }
                 Ok((_statement, conn))
             }
-            Err(_err) => Err(_err)
+            Err(_err) => Err(_err),
         }
     }
 
@@ -428,7 +441,11 @@ impl SqlWrapper {
         }
     }
 
-    pub(crate) fn process_cond_value(&self, _statement: &mut Statement, index: &mut usize) -> Result<(), SqlError>  {
+    pub(crate) fn process_cond_value(
+        &self,
+        _statement: &mut Statement,
+        index: &mut usize,
+    ) -> Result<(), SqlError> {
         for _cond in self.cond.clone() {
             match _cond.cond.clone() {
                 SqlCondEnum::Equal(_val) => {
@@ -493,7 +510,11 @@ impl SqlWrapper {
     }
 
     /// 处理追加的Sql
-    fn process_append_args(&self, _statement: &mut Statement, index: &mut usize) -> Result<(), SqlError> {
+    fn process_append_args(
+        &self,
+        _statement: &mut Statement,
+        index: &mut usize,
+    ) -> Result<(), SqlError> {
         for _append in self.append_sql.clone() {
             for _arg in _append.args.clone() {
                 if let Err(_err) = _statement.bind((*index, &_arg)) {
@@ -504,7 +525,6 @@ impl SqlWrapper {
         }
         Ok(())
     }
-
 }
 
 fn get_cond_value(cond_enum: &SqlCondEnum) -> ColumnValue {
@@ -516,7 +536,7 @@ fn get_cond_value(cond_enum: &SqlCondEnum) -> ColumnValue {
         SqlCondEnum::Le(_) => " <= ",
         SqlCondEnum::Gt(_) => " > ",
         SqlCondEnum::Ge(_) => " >= ",
-        Group(_) => ""
+        Group(_) => "",
     }
 }
 

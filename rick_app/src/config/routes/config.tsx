@@ -2,6 +2,8 @@ import { HomeOutlined, LaptopOutlined, AppstoreOutlined, DropboxOutlined } from 
 import AppPage from "../../pages/app";
 import React from "react";
 import AppRuntimePage from "../../pages/app/runtime";
+import TerminalPage from "../../pages/terminal";
+import HomePage from "../../pages/home";
 
 export declare type Node = React.ReactNode | JSX.Element;
 export declare type MenuAndRoute = {
@@ -18,7 +20,7 @@ export declare type MenuAndRoute = {
 export const indexRoutes: MenuAndRoute[] = [
 	{
 		path: '/',
-		element: <AppPage/>,
+		element: <HomePage/>,
 		key: 'IndexPage',
 		icon: <HomeOutlined/>,
 		label: <span>首页</span>
@@ -39,7 +41,7 @@ export const indexRoutes: MenuAndRoute[] = [
 	},
 	{
 		path: 'terminal/local',
-		element: <AppPage/>,
+		element: <TerminalPage/>,
 		key: 'LocalTerminalPage',
 		icon: <LaptopOutlined />,
 		label: <span>本地终端</span>,

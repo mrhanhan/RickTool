@@ -1,10 +1,13 @@
 use std::{
-    sync::{RwLock, Arc, atomic::{AtomicUsize, Ordering}},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, RwLock,
+    },
     thread,
     time::Duration,
 };
 
-use super::{thread_signal::ThreadSignal};
+use super::thread_signal::ThreadSignal;
 
 pub(crate) type Task = Box<dyn FnOnce()>;
 
@@ -77,7 +80,7 @@ pub struct ThreadPool {
     /// 任务队列
     queue: Arc<TaskQueue>,
     /// 线程池状态
-    status: Arc::<RwLock<bool>>,
+    status: Arc<RwLock<bool>>,
 }
 
 #[allow(unused)]
@@ -135,7 +138,8 @@ impl ThreadPool {
                 while *status.read().unwrap() {
                     if let Some(t) = queue.pop(Duration::from_millis(500)) {
                         t();
-                    } else {}
+                    } else {
+                    }
                 }
                 count.fetch_sub(1, Ordering::Acquire);
             });
@@ -164,9 +168,9 @@ impl ThreadPool {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::ThreadPool;
     use std::thread::sleep;
     use std::time::Duration;
-    use crate::utils::ThreadPool;
 
     #[test]
     fn test() {
@@ -174,7 +178,8 @@ mod tests {
         let model = 1;
         pool.submit(Box::new(move || {
             println!("{}", model);
-        })).unwrap();
+        }))
+        .unwrap();
         sleep(Duration::from_millis(1000));
     }
 }

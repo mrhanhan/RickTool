@@ -94,14 +94,15 @@ pub struct EventBus {
 impl EventBus {
     pub fn new() -> Self {
         EventBus {
-            handlers: Arc::new(Mutex::new(HashMap::new()))
+            handlers: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
     pub fn on<T: 'static, F: Fn(&T) + 'static>(&self, event: String, handler: F) {
         let handlers = self.handlers.clone();
         let mut handlers = handlers.lock().unwrap();
-        handlers.entry(event)
+        handlers
+            .entry(event)
             .or_insert_with(Vec::new)
             .push(Box::new(move |data: &dyn Any| {
                 if let Some(data) = data.downcast_ref::<T>() {

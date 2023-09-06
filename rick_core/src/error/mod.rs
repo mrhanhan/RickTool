@@ -1,4 +1,3 @@
-
 /// 异常数据
 pub trait RickError {
     /// 获取异常码
@@ -11,13 +10,13 @@ impl RickError for sqlite::Error {
     fn code(&self) -> isize {
         match self.code {
             None => 0,
-            Some(_code) => _code
+            Some(_code) => _code,
         }
     }
     fn message(&self) -> String {
         match self.message {
             None => String::new(),
-            Some(ref _code) => _code.clone()
+            Some(ref _code) => _code.clone(),
         }
     }
 }
@@ -25,14 +24,14 @@ impl RickError for sqlite::Error {
 #[derive(Debug)]
 pub struct AppError {
     code: isize,
-    message: String
+    message: String,
 }
 
 impl AppError {
     pub fn new<A: AsRef<str>>(code: isize, msg: A) -> Self {
         Self {
             code,
-            message: String::from(msg.as_ref())
+            message: String::from(msg.as_ref()),
         }
     }
 }

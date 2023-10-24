@@ -22,36 +22,48 @@ function TerminalPlane(props: { id: string }) {
     const firstRead = () => {
         if (terminal) {
             commonProcess(readTerminal({id: props.id, offset: 0})).then((data) => {
-                terminal.write(new Uint8Array(data))
+                for (let i = 0; i < data.length; i++) {
+                    let x = data[i];
+                    if (x === 127) {
+                        data.splice(i, 1, 8, 32, 8);
+                        i +=2;
+                    }
+                }
+                terminal.write(new Uint8Array(data));
             });
         }
     };
     useEffect(() => {
         let dispose = null as Promise<UnlistenFn>|null;
+        console.log(props.id, TerminalMap, divRef.current, divRef.current && !TerminalMap[props.id] );
         if (divRef.current && !TerminalMap[props.id] ) {
-            terminal = new Terminal({rows: 46});
+            terminal = new Terminal({rows: 46, cols: 600});
+            // @ts-ignore
+            window.terminal = terminal;
             TerminalMap[props.id] = terminal;
             terminal.open(divRef.current);
-            terminal.onData((data) => {
-                writeTerminal({id: props.id, data: stringToArray(data)});
-            });
-            terminal.onKey(({key}) => {
-                // 删除
-                if (key === '\x7F') {
-                    writeTerminal({id: props.id, data: stringToArray(key)});
+            terminal.onData(async (data) => {
+                if (data === '\x7F') {
+                    data = '\b';
                 }
+                await writeTerminal({id: props.id, data: stringToArray(data)});
             });
             if (!TerminalHasListenMap[props.id]) {
                 TerminalHasListenMap[id] = true;
                 dispose = listen<{ data: number[], id: string }>('terminal:data', data => {
-                    console.log(index, "data", data.payload);
+                    console.log(index, "DATA", data.payload);
                     if (data.payload.id === props.id) {
                         let output = data.payload.data;
-                        if (output.length === 1 && output[0] === 127) {
-                            terminal.write("\b \b")
-                        }  else {
-                            terminal?.write(new Uint8Array(output))
+                        for (let i = 0; i < output.length; i++) {
+                            let x = output[i];
+                            if (x === 127 || x === 8) {
+                                output.splice(i, 1, 8, 32, 8);
+                                i +=2;
+                            }
                         }
+                        const textDecoder = new TextDecoder('gbk');
+                        const content = textDecoder.decode(new Uint8Array(output));
+                        terminal?.write(content.replace(/(\r)?\n/g, '\r\n'));
                     }
                 });
             }

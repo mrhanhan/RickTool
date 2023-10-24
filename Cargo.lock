@@ -2185,6 +2185,7 @@ name = "rick_app"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "log",
  "md5",
  "rick_core",
  "rick_core_macro",
@@ -2193,6 +2194,7 @@ dependencies = [
  "sqlite",
  "tauri",
  "tauri-build",
+ "winapi",
 ]
 
 [[package]]
@@ -2225,6 +2227,13 @@ name = "rick_net"
 version = "0.1.0"
 dependencies = [
  "wintun",
+]
+
+[[package]]
+name = "rick_terminal"
+version = "0.1.0"
+dependencies = [
+ "winapi",
 ]
 
 [[package]]

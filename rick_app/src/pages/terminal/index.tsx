@@ -7,6 +7,7 @@ import {createTerminal, killTerminal, listTerminal, readTerminal, writeTerminal}
 import {commonProcess, errorMessage} from "../../model";
 import {genCode} from "../../utils/uid";
 import {listen} from "../../utils/invoke";
+import {FitAddon} from 'xterm-addon-fit'
 import {UnlistenFn} from "@tauri-apps/api/event";
 import {stringToArray} from "./terminal-data-utils";
 
@@ -19,16 +20,10 @@ function TerminalPlane(props: { id: string }) {
     const divRef = useRef<HTMLDivElement>(null);
     let terminal = TerminalMap[props.id];
     let id = index ++ ;
+    const [size, setSize] = useState({rows: 40, cols: 100});
     const firstRead = () => {
         if (terminal) {
             commonProcess(readTerminal({id: props.id, offset: 0})).then((data) => {
-                for (let i = 0; i < data.length; i++) {
-                    let x = data[i];
-                    if (x === 127) {
-                        data.splice(i, 1, 8, 32, 8);
-                        i +=2;
-                    }
-                }
                 terminal.write(new Uint8Array(data));
             });
         }
@@ -37,33 +32,30 @@ function TerminalPlane(props: { id: string }) {
         let dispose = null as Promise<UnlistenFn>|null;
         console.log(props.id, TerminalMap, divRef.current, divRef.current && !TerminalMap[props.id] );
         if (divRef.current && !TerminalMap[props.id] ) {
-            terminal = new Terminal({rows: 46, cols: 600});
+            terminal = new Terminal();
             // @ts-ignore
             window.terminal = terminal;
+            const fitAddon = new FitAddon();
+            terminal.loadAddon(fitAddon);
+            fitAddon.fit();
             TerminalMap[props.id] = terminal;
             terminal.open(divRef.current);
+            (terminal as any).fit = fitAddon;
+            terminal.onResize((size) => {
+                setSize(size);
+                console.log(size);
+            });
             terminal.onData(async (data) => {
-                if (data === '\x7F') {
-                    data = '\b';
-                }
                 await writeTerminal({id: props.id, data: stringToArray(data)});
             });
             if (!TerminalHasListenMap[props.id]) {
                 TerminalHasListenMap[id] = true;
                 dispose = listen<{ data: number[], id: string }>('terminal:data', data => {
-                    console.log(index, "DATA", data.payload);
                     if (data.payload.id === props.id) {
                         let output = data.payload.data;
-                        for (let i = 0; i < output.length; i++) {
-                            let x = output[i];
-                            if (x === 127 || x === 8) {
-                                output.splice(i, 1, 8, 32, 8);
-                                i +=2;
-                            }
-                        }
-                        const textDecoder = new TextDecoder('gbk');
+                        const textDecoder = new TextDecoder('utf-8');
                         const content = textDecoder.decode(new Uint8Array(output));
-                        terminal?.write(content.replace(/(\r)?\n/g, '\r\n'));
+                        terminal?.write(content);
                     }
                 });
             }
@@ -71,6 +63,7 @@ function TerminalPlane(props: { id: string }) {
         }
         return () => {
             terminal?.dispose();
+            (terminal as any)?.fit?.dispose()
             dispose?.then(it => {
                 it();
                 delete TerminalHasListenMap[props.id];
@@ -78,8 +71,9 @@ function TerminalPlane(props: { id: string }) {
             delete TerminalMap[props.id];
         };
     }, []);
-    return <div ref={divRef}>
-
+    return <div>
+        <div ref={divRef}></div>
+        <div>ROWS:{size.rows} COLS:{size.cols}</div>
     </div>;
 }
 

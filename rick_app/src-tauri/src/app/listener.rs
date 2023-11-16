@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 /// enum XXEvent {
 ///     Start, End, Stop
 /// }
-/// impl Into<&'static str> for XXEvent {
+/// _impl Into<&'static str> for XXEvent {
 ///     fn into(self) -> &'static str {
 ///         match self {
 ///             Self::Start => "AppEvent::Start",

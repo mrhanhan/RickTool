@@ -1,13 +1,11 @@
 mod arc_val;
 mod global_val;
 mod thread_pool;
-mod thread_signal;
 
-pub use arc_val::*;
 pub use global_val::*;
 use std::any::Any;
 pub use thread_pool::*;
-pub use thread_signal::*;
+pub use rick_core::utils::ThreadSignal;
 
 /// 类型转换
 pub fn convert<'a, T: Any>(data: &'a dyn Any) -> Box<T> {

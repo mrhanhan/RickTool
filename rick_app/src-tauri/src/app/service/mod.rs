@@ -12,6 +12,7 @@ use std::ops::Deref;
 use std::panic::{catch_unwind, UnwindSafe};
 use std::path::Display;
 use std::sync::{Arc, RwLock};
+use log::debug;
 use rick_core::sqlite::SqlError;
 
 /// 结果
@@ -273,7 +274,7 @@ impl ServiceRegister {
                 let _self = Arc::new(&this);
                 let _service_ptr = &service_invoke as *const ServiceInvoke as usize;
 
-                println!("{:#?}", service_invoke.data());
+                debug!("{:#?}", service_invoke.data());
                 let result = catch_unwind(move || {
                     let _service = unsafe { &*(_service_ptr as *const ServiceInvoke) };
                     let _result = _self.sink_call(msg, _service.clone());
@@ -321,7 +322,7 @@ impl ServiceRegister {
         let _self = Arc::new(self);
         let _service_ptr = &service_invoke as *const ServiceInvoke as usize;
 
-        println!("{:#?}", service_invoke.data());
+        debug!("{:#?}", service_invoke.data());
         let result = catch_unwind(move || {
             let _service = unsafe { &*(_service_ptr as *const ServiceInvoke) };
             self.sink_call(msg, _service.clone()).unwrap()

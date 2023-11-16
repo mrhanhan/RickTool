@@ -65,5 +65,17 @@ export default class Interpreter {
 
     private _addDefaultHandler() {
         this.addHandler('mov', movHandler);
+        this.addHandler('push', movHandler);
+        this.addHandler('pull', movHandler);
+        this.addHandler('je', movHandler);
+        this.addHandler('jmp', movHandler);
+        this.addHandler('lea', movHandler);
+        this.addHandler('call', movHandler);
+        this.addHandler('ret', movHandler);
+        this.addHandler('nop', movHandler);
+        this.addHandler('xor', movHandler);
+        this.addHandler('add', movHandler);
+        this.addHandler('sub', movHandler);
+        this.addHandler('jne', movHandler);
     }
 }

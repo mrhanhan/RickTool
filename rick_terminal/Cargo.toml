@@ -2,10 +2,8 @@
 name = "rick_terminal"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#windows = { version = "0.39", features = []}
-#windows-sys = { version = "0.36", features = []}
-winapi = {version = "0.3.9", features = ["namedpipeapi", "consoleapi", "wincontypes"]}
+rick_core = { path = "../rick_core" }
+winapi = {version = "0.3.9", features = ["namedpipeapi", "minwindef", "consoleapi", "minwinbase", "errhandlingapi", "wincontypes", "processthreadsapi", "synchapi", "handleapi", "fileapi", "winbase", "winnt"]}

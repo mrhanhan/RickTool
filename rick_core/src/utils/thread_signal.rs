@@ -3,20 +3,20 @@ use std::{
     time::Duration,
 };
 
-pub(crate) struct ThreadSignal(Condvar, Mutex<bool>);
+pub struct ThreadSignal(Condvar, Mutex<bool>);
 
 #[allow(unused)]
 impl ThreadSignal {
-    pub(crate) fn new_arc() -> Arc<ThreadSignal> {
+    pub fn new_arc() -> Arc<ThreadSignal> {
         Arc::new(ThreadSignal::new())
     }
 
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         ThreadSignal(Condvar::new(), Mutex::new(false))
     }
 
     /// 等待
-    pub(crate) fn wait(&self) {
+    pub fn wait(&self) {
         let mut flag = self.1.lock().unwrap();
         // 当前版本
         if *self.0.wait(flag).unwrap() {
@@ -24,7 +24,7 @@ impl ThreadSignal {
         }
     }
     /// 等待
-    pub(crate) fn wait_timeout(&self, timeout: Duration) {
+    pub fn wait_timeout(&self, timeout: Duration) {
         let mut flag = self.1.lock().unwrap();
         match self.0.wait_timeout(flag, timeout) {
             Ok(mut f) => {
@@ -43,12 +43,12 @@ impl ThreadSignal {
     }
 
     /// 唤醒一个
-    pub(crate) fn notify_one(&self) {
+    pub fn notify_one(&self) {
         *self.1.lock().unwrap() = true;
         self.0.notify_one();
     }
     /// 唤醒一个
-    pub(crate) fn notify_all(&self) {
+    pub fn notify_all(&self) {
         *self.1.lock().unwrap() = true;
         self.0.notify_all();
     }

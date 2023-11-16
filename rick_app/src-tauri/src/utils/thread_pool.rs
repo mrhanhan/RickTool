@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use super::thread_signal::ThreadSignal;
+use super::ThreadSignal;
 
 pub(crate) type Task = Box<dyn FnOnce()>;
 

@@ -2189,6 +2189,7 @@ dependencies = [
  "md5",
  "rick_core",
  "rick_core_macro",
+ "rick_terminal",
  "serde",
  "serde_json",
  "sqlite",
@@ -2233,6 +2234,7 @@ dependencies = [
 name = "rick_terminal"
 version = "0.1.0"
 dependencies = [
+ "rick_core",
  "winapi",
 ]
 

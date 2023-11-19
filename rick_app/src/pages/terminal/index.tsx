@@ -32,7 +32,7 @@ function TerminalPlane(props: { id: string }) {
         let dispose = null as Promise<UnlistenFn>|null;
         console.log(props.id, TerminalMap, divRef.current, divRef.current && !TerminalMap[props.id] );
         if (divRef.current && !TerminalMap[props.id] ) {
-            terminal = new Terminal();
+            terminal = new Terminal({rows: 40, cols: 100});
             // @ts-ignore
             window.terminal = terminal;
             const fitAddon = new FitAddon();

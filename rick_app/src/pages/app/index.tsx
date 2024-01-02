@@ -324,7 +324,9 @@ export default function AppPage() {
                 <Card title={"App"} extra={extraNode} loading={loading}>
                     <AppList dataSource={dataSource}
                              onEdit={app => openEditAppForm(app.id)}
-                             onRun={app => {}}
+                             onRun={app => {
+                                 
+                             }}
                              onRunAs={app => {}}
                              onDel={app => openDeleteApp(app.id)}
                     />

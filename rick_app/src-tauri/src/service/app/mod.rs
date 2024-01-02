@@ -1,6 +1,7 @@
 mod app;
 mod app_group;
 mod app_runtime;
+mod app_start;
 
 use crate::app::service::ServiceRegister;
 pub use app::get_logo_dir;
@@ -10,4 +11,5 @@ pub fn init_service(_register: &ServiceRegister) {
     app_group::init_service(_register);
     app_runtime::init_service(_register);
     app::init_service(_register);
+    app_start::init_service(_register);
 }

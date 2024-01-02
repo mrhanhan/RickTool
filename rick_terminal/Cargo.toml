@@ -6,4 +6,12 @@ edition = "2021"
 
 [dependencies]
 rick_core = { path = "../rick_core" }
-winapi = {version = "0.3.9", features = ["namedpipeapi", "minwindef", "consoleapi", "minwinbase", "errhandlingapi", "wincontypes", "processthreadsapi", "synchapi", "handleapi", "fileapi", "winbase", "winnt"]}
+winapi = {version = "0.3.9", features = ["shellapi", "namedpipeapi", "minwindef", "consoleapi", "minwinbase", "errhandlingapi", "wincontypes", "processthreadsapi", "synchapi", "handleapi", "fileapi", "winbase", "winnt"]}
+log = "0.4.20"
+lazy_static = "1.4"
+
+[[bin]]
+name='uac'
+path='src/uac.rs'
+
+[features]

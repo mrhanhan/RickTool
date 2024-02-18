@@ -3,7 +3,6 @@ use crate::terminal::model::{ProcessHolder, StartupInfo};
 mod os;
 mod process_holder;
 mod utils;
-mod pipe;
 mod stdio;
 
 /// 创建进程

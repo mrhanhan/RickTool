@@ -1,12 +1,18 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use log::info;
+use rick_core::error::AppError;
 use crate::terminal::Size;
 
-pub trait StartupCycle {
+pub trait StartupCycle{
     /// 启动之前
     /// @param info 启动程序信息
     /// @return true 继续启动, false 取消启动
-    fn on_start(&self, info: &mut StartupInfo) -> bool;
+    fn on_start(&self, info: &mut StartupInfo);
+    /// 程序已经启动
+    /// @param info 程序启动信息
+    /// @param holder 程序运行信息
+    fn on_started(&self, info: &StartupInfo, holder: &dyn ProcessHolder);
     /// 程序运行结束
     /// @param info 程序启动信息
     /// @param holder 程序运行信息
@@ -39,16 +45,32 @@ pub trait ProcessHolder {
     fn start_time(&self) -> u64;
     /// 写入数据
     /// @param data 写入的数据
-    fn write(&self, data: &[u8]);
+    /// @return 返回写入数据长度
+    fn write(&self, data: &mut Vec<u8>) -> Result<usize, AppError>;
+    /// 读取数据
+    /// @param data 写入的数据
+    /// @return 返回读取数据长度
+    fn read(&self, data: &mut Vec<u8>) -> Result<usize, AppError>;
     /// 重新设置虚拟终端大小
     /// @param size 大小
-    fn resize(&self, size: Size);
+    /// @return 返回是否Resize 成功
+    fn resize(&self, size: Size) -> Result<(), AppError>;
+
     /// kill 停止
     /// @return 返回程序停止代码
-    fn kill(self) -> usize;
+    fn kill(&self)-> Result<usize, AppError>;
+    /// 等待进程结束
+    /// @return 程序退出代码
+    fn wait(&self) -> Result<usize, AppError>;
+    /// 等待进程结束
+    /// @param timeout 等待超时时间
+    /// @return 程序退出代码
+    fn try_wait(&self, timeout: Duration) -> Result<usize, AppError>;
+
 }
 
 /// 程序启动信息
+#[derive(Clone)]
 pub struct StartupInfo {
     /// program 需要运行的程序
     pub(crate) program: String,
@@ -65,7 +87,7 @@ pub struct StartupInfo {
     /// 是否使用虚拟终端方式启动
     pub(crate) vt: bool,
     /// 启动周期
-    pub(crate) cycles: Vec<Box<dyn StartupCycle>>,
+    pub(crate) cycles: Vec<Box<&'static dyn StartupCycle>>,
     /// Terminal size
     pub(crate) vt_size: Option<Size>,
     /// 运行时长
@@ -157,7 +179,7 @@ impl StartupInfoBuilder {
     }
     /// 添加生命周期
     /// @param cycle
-    pub fn add_cycle(&self, cycle: Box<dyn StartupCycle>) -> &Self {
+    pub fn add_cycle(&self, cycle: Box<&'static dyn StartupCycle>) -> &Self {
         let mut info_lock = self.info.lock().unwrap();
         let info = info_lock.as_mut().unwrap();
         info.cycles.push(cycle);

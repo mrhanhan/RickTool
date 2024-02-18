@@ -72,7 +72,7 @@ impl Snow {
 }
 
 lazy_static! {
-    static ref SNOW: Snow = Snow::new(100, 100);
+    static ref SNOW: Snow = Snow::new(63, 63);
 }
 
 pub fn snow_id() -> u64 {
